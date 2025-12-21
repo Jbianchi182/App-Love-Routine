@@ -45,7 +45,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             calendarFormat: CalendarFormat.month,
             startingDayOfWeek: StartingDayOfWeek.monday,
-            headerStyle: const HeaderStyle(formatButtonVisible: false, titleCentered: true),
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
             calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
                 color: theme.colorScheme.primary,
@@ -62,9 +65,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             ),
             eventLoader: (day) {
               return routinesAsync.valueOrNull?.where((routine) {
-                // Simple daily check for now, can be improved with recurrence logic
-                return isSameDay(routine.startDate, day);
-              }).toList() ?? [];
+                    // Simple daily check for now, can be improved with recurrence logic
+                    return isSameDay(routine.startDate, day);
+                  }).toList() ??
+                  [];
             },
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
@@ -83,8 +87,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 final selectedDate = _selectedDay ?? DateTime.now();
                 // Filter routines for the selected day
                 final daysRoutines = routines.where((routine) {
-                   // TODO: Implement proper recurrence checking
-                   return isSameDay(routine.startDate, selectedDate);
+                  // TODO: Implement proper recurrence checking
+                  return isSameDay(routine.startDate, selectedDate);
                 }).toList();
 
                 if (daysRoutines.isEmpty) {
@@ -105,7 +109,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                       subtitle: Text(DateFormat('HH:mm').format(routine.time)),
                       trailing: IconButton(
                         icon: const Icon(Icons.edit_outlined),
-                        onPressed: () => _showRoutineDialog(context, routine: routine),
+                        onPressed: () =>
+                            _showRoutineDialog(context, routine: routine),
                       ),
                       onLongPress: () => _confirmDelete(context, routine),
                     );
@@ -121,13 +126,14 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     );
   }
 
-  Future<void> _showRoutineDialog(BuildContext context, {Routine? routine}) async {
+  Future<void> _showRoutineDialog(
+    BuildContext context, {
+    Routine? routine,
+  }) async {
     final result = await showDialog<Routine>(
       context: context,
-      builder: (context) => RoutineDialog(
-        routine: routine,
-        initialDate: _selectedDay,
-      ),
+      builder: (context) =>
+          RoutineDialog(routine: routine, initialDate: _selectedDay),
     );
 
     if (result != null) {
@@ -146,14 +152,20 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         title: const Text('Excluir Rotina'),
         content: Text('Deseja excluir "${routine.title}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Excluir')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
         ],
       ),
     );
 
     if (confirm == true) {
-      await ref.read(routineProvider.notifier).deleteRoutine(routine.id);
+      await ref.read(routineProvider.notifier).deleteRoutine(routine);
     }
   }
 }

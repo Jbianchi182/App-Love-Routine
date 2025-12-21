@@ -1,51 +1,56 @@
-import 'package:isar/isar.dart';
+import 'package:hive/hive.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
 
 part 'routine.g.dart';
 
-@collection
-class Routine {
-  Id id = Isar.autoIncrement;
+@HiveType(typeId: 0)
+class Routine extends HiveObject {
+  @HiveField(0)
+  int? id; // Hive handles keys, but we can store ID explicitly if needed, or use key
 
+  @HiveField(1)
   late String title;
+
+  @HiveField(2)
   String? description;
 
+  @HiveField(3)
   late DateTime startDate;
-  DateTime? endDate;
-  
-  // Time of day stored as DateTime (using arbitrary date) or just minutes from midnight could work, 
-  // but DateTime is easier for Isar basic support. 
-  // We'll trust the UI to handle the time component.
-  late DateTime time; 
 
-  @Enumerated(EnumType.name)
+  @HiveField(4)
+  DateTime? endDate;
+
+  @HiveField(5)
+  late DateTime time;
+
+  @HiveField(6)
   late RecurrenceType recurrence;
 
-  // For custom recurrence (e.g., "every 2nd Monday") - complex, simplified for now
-  // Storing specific days of week [1, 3, 5] for Mon, Wed, Fri
-  List<int>? customDaysOfWeek; 
-  
-  // For "every X days/weeks/months"
+  @HiveField(7)
+  List<int>? customDaysOfWeek;
+
+  @HiveField(8)
   int? interval;
 
-  @Enumerated(EnumType.name)
+  @HiveField(9)
   RoutineStatus status = RoutineStatus.pending;
 
-  // History of changes or completion
-  // Ideally this might be a separate collection if it grows large, 
-  // but embedding for simplicity for now.
+  @HiveField(10)
   List<RoutineHistoryEntry> history = [];
 }
 
-@embedded
+@HiveType(typeId: 1)
 class RoutineHistoryEntry {
+  @HiveField(0)
   late DateTime timestamp;
-  late String details; // e.g. "Status changed to Completed"
-  
-  @Enumerated(EnumType.name)
+
+  @HiveField(1)
+  late String details;
+
+  @HiveField(2)
   RoutineStatus? previousStatus;
-  
-  @Enumerated(EnumType.name)
+
+  @HiveField(3)
   RoutineStatus? newStatus;
 }

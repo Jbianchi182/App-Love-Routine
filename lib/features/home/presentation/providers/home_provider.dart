@@ -1,12 +1,13 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:love_routine_app/features/finance/presentation/providers/finance_provider.dart';
+import 'package:love_routine_app/features/finance/domain/enums/transaction_type.dart';
 
 class HomeState {
   final DateTime selectedDate;
   final DateTime focusedDate;
   final double income;
   final double expense;
-  
+
   // Mock events for now
   final List<String> upcomingEvents;
 
@@ -39,11 +40,27 @@ class HomeNotifier extends Notifier<HomeState> {
   @override
   HomeState build() {
     final now = DateTime.now();
+
+    // Watch Finance Provider
+    final transactionsAsync = ref.watch(financeProvider);
+    final transactions = transactionsAsync.asData?.value ?? [];
+
+    double income = 0;
+    double expense = 0;
+
+    for (var t in transactions) {
+      if (t.type == TransactionType.income) {
+        income += t.amount;
+      } else {
+        expense += t.amount;
+      }
+    }
+
     return HomeState(
       selectedDate: now,
       focusedDate: now,
-      income: 5000.0, // Mock data
-      expense: 3200.50, // Mock data
+      income: income,
+      expense: expense,
       upcomingEvents: [
         'Dentist Appointment - 14:00',
         'Project Meeting - 16:30',
@@ -53,10 +70,7 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   void onDaySelected(DateTime selectedDay, DateTime focusedDay) {
-    state = state.copyWith(
-      selectedDate: selectedDay,
-      focusedDate: focusedDay,
-    );
+    state = state.copyWith(selectedDate: selectedDay, focusedDate: focusedDay);
   }
 
   void onPageChanged(DateTime focusedDay) {

@@ -1,27 +1,24 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
-import 'package:love_routine_app/features/calendar/presentation/providers/routine_provider.dart';
 
 class DietNotifier extends AsyncNotifier<List<DietMeal>> {
-  late Isar _isar;
+  late Box<DietMeal> _box;
 
   @override
   Future<List<DietMeal>> build() async {
-    _isar = await ref.watch(isarProvider.future);
+    _box = Hive.box<DietMeal>('diet_meals');
     return _fetchAllDiets();
   }
 
   Future<List<DietMeal>> _fetchAllDiets() async {
-    return _isar.dietMeals.where().findAll();
+    return _box.values.toList();
   }
 
   Future<void> addDietMeal(DietMeal meal) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _isar.writeTxn(() async {
-        await _isar.dietMeals.put(meal);
-      });
+      await _box.add(meal);
       return _fetchAllDiets();
     });
   }
@@ -29,19 +26,15 @@ class DietNotifier extends AsyncNotifier<List<DietMeal>> {
   Future<void> updateDietMeal(DietMeal meal) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _isar.writeTxn(() async {
-        await _isar.dietMeals.put(meal);
-      });
+      await meal.save();
       return _fetchAllDiets();
     });
   }
 
-  Future<void> deleteDietMeal(int id) async {
+  Future<void> deleteDietMeal(DietMeal meal) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
-      await _isar.writeTxn(() async {
-        await _isar.dietMeals.delete(id);
-      });
+      await meal.delete();
       return _fetchAllDiets();
     });
   }

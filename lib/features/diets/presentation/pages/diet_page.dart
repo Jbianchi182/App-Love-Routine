@@ -17,9 +17,7 @@ class DietPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dieta & Nutrição'),
-      ),
+      // AppBar removed for tab integration
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showDietDialog(context, ref),
         label: const Text('Novo Plano'),
@@ -32,16 +30,22 @@ class DietPage extends ConsumerWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                   Icon(Icons.restaurant_menu, size: 64, color: theme.colorScheme.secondary.withOpacity(0.5)),
-                   const SizedBox(height: 16),
-                   Text(
+                  Icon(
+                    Icons.restaurant_menu,
+                    size: 64,
+                    color: theme.colorScheme.secondary.withOpacity(0.5),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
                     'Nenhum plano alimentar criado.',
                     style: theme.textTheme.titleMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Crie refeições personalizadas para organizar sua dieta.'),
+                  const Text(
+                    'Crie refeições personalizadas para organizar sua dieta.',
+                  ),
                 ],
               ),
             );
@@ -59,7 +63,10 @@ class DietPage extends ConsumerWidget {
                     ListTile(
                       leading: CircleAvatar(
                         backgroundColor: theme.colorScheme.tertiaryContainer,
-                        child: Icon(Icons.restaurant, color: theme.colorScheme.tertiary),
+                        child: Icon(
+                          Icons.restaurant,
+                          color: theme.colorScheme.tertiary,
+                        ),
                       ),
                       title: Text(
                         meal.name,
@@ -74,19 +81,34 @@ class DietPage extends ConsumerWidget {
                           const PopupMenuItem(
                             value: 'edit',
                             child: Row(
-                              children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Editar')],
+                              children: [
+                                Icon(Icons.edit, size: 20),
+                                SizedBox(width: 8),
+                                Text('Editar'),
+                              ],
                             ),
                           ),
                           const PopupMenuItem(
                             value: 'schedule',
                             child: Row(
-                              children: [Icon(Icons.calendar_month, size: 20), SizedBox(width: 8), Text('Agendar')],
+                              children: [
+                                Icon(Icons.calendar_month, size: 20),
+                                SizedBox(width: 8),
+                                Text('Agendar'),
+                              ],
                             ),
                           ),
                           const PopupMenuItem(
                             value: 'delete',
                             child: Row(
-                              children: [Icon(Icons.delete, size: 20, color: Colors.red), SizedBox(width: 8), Text('Excluir', style: TextStyle(color: Colors.red))],
+                              children: [
+                                Icon(Icons.delete, size: 20, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Excluir',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -131,7 +153,11 @@ class DietPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showDietDialog(BuildContext context, WidgetRef ref, {DietMeal? meal}) async {
+  Future<void> _showDietDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    DietMeal? meal,
+  }) async {
     final result = await showDialog<DietMeal>(
       context: context,
       builder: (context) => DietDialog(meal: meal),
@@ -139,73 +165,93 @@ class DietPage extends ConsumerWidget {
 
     if (result != null) {
       if (meal == null) {
-         await ref.read(dietProvider.notifier).addDietMeal(result);
+        await ref.read(dietProvider.notifier).addDietMeal(result);
       } else {
-         await ref.read(dietProvider.notifier).updateDietMeal(result);
+        await ref.read(dietProvider.notifier).updateDietMeal(result);
       }
     }
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, DietMeal meal) async {
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    DietMeal meal,
+  ) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Plano'),
         content: Text('Deseja excluir "${meal.name}"?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Excluir')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
         ],
       ),
     );
 
     if (confirm == true) {
-      await ref.read(dietProvider.notifier).deleteDietMeal(meal.id);
+      await ref.read(dietProvider.notifier).deleteDietMeal(meal);
     }
   }
-  
-  Future<void> _scheduleMeal(BuildContext context, WidgetRef ref, DietMeal meal) async {
+
+  Future<void> _scheduleMeal(
+    BuildContext context,
+    WidgetRef ref,
+    DietMeal meal,
+  ) async {
     final pickedDate = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
-    
+
     if (pickedDate != null && context.mounted) {
-       final pickedTime = await showTimePicker(
-         context: context,
-         initialTime: const TimeOfDay(hour: 08, minute: 00),
-       );
-       
-       if (pickedTime != null && context.mounted) {
-         final scheduleTime = DateTime(
-           pickedDate.year,
-           pickedDate.month,
-           pickedDate.day,
-           pickedTime.hour,
-           pickedTime.minute,
-         );
-         
-         // Create a Routine from the Diet Meal
-         final routine = Routine()
-           ..title = "Refeição: ${meal.name}"
-           ..description = "Plano: ${meal.tags.map((t) => t.label).join(', ')}\nItens: ${meal.foodItems.join(', ')}"
-           ..startDate = scheduleTime
-           ..time = scheduleTime
-           ..endDate = null
-           ..recurrence = RecurrenceType.none // Can be improved to allow recurring meals
-           ..status = RoutineStatus.pending
-           ..history = [];
-           
-         await ref.read(routineProvider.notifier).addRoutine(routine);
-         
-         if (context.mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-             SnackBar(content: Text('Refeição agendada para ${pickedDate.day}/${pickedDate.month}!')),
-           );
-         }
-       }
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: const TimeOfDay(hour: 08, minute: 00),
+      );
+
+      if (pickedTime != null && context.mounted) {
+        final scheduleTime = DateTime(
+          pickedDate.year,
+          pickedDate.month,
+          pickedDate.day,
+          pickedTime.hour,
+          pickedTime.minute,
+        );
+
+        // Create a Routine from the Diet Meal
+        final routine = Routine()
+          ..title = "Refeição: ${meal.name}"
+          ..description =
+              "Plano: ${meal.tags.map((t) => t.label).join(', ')}\nItens: ${meal.foodItems.join(', ')}"
+          ..startDate = scheduleTime
+          ..time = scheduleTime
+          ..endDate = null
+          ..recurrence = RecurrenceType
+              .none // Can be improved to allow recurring meals
+          ..status = RoutineStatus.pending
+          ..history = [];
+
+        await ref.read(routineProvider.notifier).addRoutine(routine);
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Refeição agendada para ${pickedDate.day}/${pickedDate.month}!',
+              ),
+            ),
+          );
+        }
+      }
     }
   }
 }

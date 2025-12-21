@@ -22,7 +22,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
   late DateTime _startDate;
   late DateTime _time;
   late RecurrenceType _recurrence;
-  
+
   @override
   void initState() {
     super.initState();
@@ -85,7 +85,8 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Título'),
-                validator: (value) => value == null || value.isEmpty ? 'Informe o título' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Informe o título' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -100,8 +101,12 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
                     child: InkWell(
                       onTap: _pickDate,
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Data de Início'),
-                        child: Text(DateFormat('dd/MM/yyyy').format(_startDate)),
+                        decoration: const InputDecoration(
+                          labelText: 'Data de Início',
+                        ),
+                        child: Text(
+                          DateFormat('dd/MM/yyyy').format(_startDate),
+                        ),
                       ),
                     ),
                   ),
@@ -119,7 +124,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<RecurrenceType>(
-                value: _recurrence,
+                initialValue: _recurrence,
                 decoration: const InputDecoration(labelText: 'Repetição'),
                 items: RecurrenceType.values.map((type) {
                   return DropdownMenuItem(
@@ -140,10 +145,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
-        FilledButton(
-          onPressed: _saveRoutine,
-          child: const Text('Salvar'),
-        ),
+        FilledButton(onPressed: _saveRoutine, child: const Text('Salvar')),
       ],
     );
   }
@@ -167,11 +169,16 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
 
   String _getRecurrenceLabel(RecurrenceType type) {
     switch (type) {
-      case RecurrenceType.none: return 'Uma vez';
-      case RecurrenceType.daily: return 'Diariamente';
-      case RecurrenceType.weekly: return 'Semanalmente';
-      case RecurrenceType.monthly: return 'Mensalmente';
-      case RecurrenceType.custom: return 'Personalizado';
+      case RecurrenceType.none:
+        return 'Uma vez';
+      case RecurrenceType.daily:
+        return 'Diariamente';
+      case RecurrenceType.weekly:
+        return 'Semanalmente';
+      case RecurrenceType.monthly:
+        return 'Mensalmente';
+      case RecurrenceType.custom:
+        return 'Personalizado';
     }
   }
 }

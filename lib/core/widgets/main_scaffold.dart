@@ -33,14 +33,14 @@ class MainScaffold extends StatelessWidget {
             label: 'Calendar', // TODO: Localize
           ),
           const NavigationDestination(
-            icon: Icon(Icons.attach_money_outlined),
-            selectedIcon: Icon(Icons.attach_money),
-            label: 'Finance', // TODO: Localize
+            icon: Icon(Icons.local_library_outlined),
+            selectedIcon: Icon(Icons.local_library),
+            label: 'Educação', // TODO: Localize
           ),
           const NavigationDestination(
-            icon: Icon(Icons.school_outlined),
-            selectedIcon: Icon(Icons.school),
-            label: 'Education', // TODO: Localize
+            icon: Icon(Icons.favorite_outline),
+            selectedIcon: Icon(Icons.favorite),
+            label: 'Bem-Estar', // TODO: Localize
           ),
           const NavigationDestination(
             icon: Icon(Icons.menu_outlined),
