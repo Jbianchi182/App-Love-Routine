@@ -54,18 +54,81 @@ class HealthView extends ConsumerWidget {
                       itemBuilder: (context, index) {
                         final med = meds[index];
                         return Card(
-                          child: ListTile(
-                            leading: const Icon(Icons.local_pharmacy),
-                            title: Text(med.name),
-                            subtitle: Text(
-                              '${med.dosage} • A cada ${med.frequencyHours}h',
-                            ),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => ref
-                                  .read(medicationProvider.notifier)
-                                  .deleteMedication(med),
-                            ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: const Icon(Icons.local_pharmacy),
+                                title: Text(med.name),
+                                subtitle: Text(
+                                  '${med.dosage} • A cada ${med.frequencyHours}h',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: () => _showMedicationDialog(
+                                        context,
+                                        ref,
+                                        medication: med,
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete),
+                                      onPressed: () => ref
+                                          .read(medicationProvider.notifier)
+                                          .deleteMedication(med),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Próxima dose: ${DateFormat('dd/MM HH:mm').format(med.nextDose)}',
+                                      style: TextStyle(
+                                        color:
+                                            med.nextDose.isBefore(
+                                              DateTime.now(),
+                                            )
+                                            ? Colors.red
+                                            : null,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    FilledButton.icon(
+                                      onPressed: () {
+                                        ref
+                                            .read(medicationProvider.notifier)
+                                            .markAsTaken(med);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Medicamento marcado como tomado!',
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      icon: const Icon(Icons.check, size: 18),
+                                      label: const Text('Tomar'),
+                                      style: FilledButton.styleFrom(
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -135,14 +198,22 @@ class HealthView extends ConsumerWidget {
 
   Future<void> _showMedicationDialog(
     BuildContext context,
-    WidgetRef ref,
-  ) async {
+    WidgetRef ref, {
+    Medication? medication,
+  }) async {
     final result = await showDialog<Medication>(
       context: context,
-      builder: (_) => const MedicationDialog(),
+      builder: (_) => MedicationDialog(medication: medication),
     );
+
     if (result != null) {
-      ref.read(medicationProvider.notifier).addMedication(result);
+      if (result.isInBox) {
+        await result.save();
+        // Force refresh
+        ref.invalidate(medicationProvider);
+      } else {
+        ref.read(medicationProvider.notifier).addMedication(result);
+      }
     }
   }
 

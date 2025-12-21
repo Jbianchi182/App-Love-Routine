@@ -5,5 +5,10 @@
     "themeTitle": "Theme",
     "languageTitle": "Language",
     "selectTheme": "Select Theme",
-    "selectLanguage": "Select Language"
+    "selectLanguage": "Select Language",
+    "calendarTitle": "Calendar",
+    "healthTitle": "Health",
+    "educationTitle": "Education",
+    "financeTitle": "Finance",
+    "menuTitle": "Menu"
 }

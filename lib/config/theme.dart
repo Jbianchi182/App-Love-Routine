@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:love_routine_app/core/constants/colors.dart';
 
-enum AppThemeType {
-  strawberry,
-  peach,
-  sky,
-  mint,
-  dark,
-}
+enum AppThemeType { strawberry, peach, sky, mint, dark }
 
 class AppTheme {
   static ThemeData getTheme(AppThemeType type) {
@@ -82,8 +76,24 @@ class AppTheme {
       textTheme: GoogleFonts.outfitTextTheme(baseTextTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: primary,
-        foregroundColor: brightness == Brightness.light ? Colors.white : Colors.black,
+        foregroundColor: brightness == Brightness.light
+            ? Colors.white
+            : Colors.black,
         elevation: 0,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surface,
+        selectedColor: primary,
+        labelStyle: TextStyle(
+          color: brightness == Brightness.light ? Colors.black : Colors.white,
+        ),
+        secondaryLabelStyle: TextStyle(
+          color: brightness == Brightness.light ? Colors.white : Colors.black,
+          fontWeight: FontWeight.bold,
+        ),
+        checkmarkColor: brightness == Brightness.light
+            ? Colors.white
+            : Colors.black,
       ),
       cardTheme: CardThemeData(
         color: surface,
@@ -94,10 +104,31 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: primary,
-          foregroundColor: brightness == Brightness.light ? Colors.white : Colors.black,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          foregroundColor: brightness == Brightness.light
+              ? Colors.white
+              : Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        indicatorColor: primary,
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return IconThemeData(
+              color: brightness == Brightness.light
+                  ? Colors.white
+                  : Colors.black,
+            );
+          }
+          return IconThemeData(
+            color: brightness == Brightness.light
+                ? Colors.black54
+                : Colors.white70,
+          );
+        }),
       ),
     );
   }

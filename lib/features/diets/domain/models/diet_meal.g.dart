@@ -22,13 +22,19 @@ class DietMealAdapter extends TypeAdapter<DietMeal> {
       ..description = fields[2] as String?
       ..foodItems = (fields[3] as List).cast<String>()
       ..tags = (fields[4] as List).cast<DietTag>()
-      ..calories = fields[5] as double?;
+      ..calories = fields[5] as double?
+      ..recurrence = fields[6] as RecurrenceType
+      ..customDaysOfWeek = (fields[7] as List?)?.cast<int>()
+      ..startDate = fields[8] as DateTime
+      ..endDate = fields[9] as DateTime?
+      ..time = fields[10] as DateTime
+      ..customDaysOfMonth = (fields[11] as List?)?.cast<int>();
   }
 
   @override
   void write(BinaryWriter writer, DietMeal obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -40,7 +46,19 @@ class DietMealAdapter extends TypeAdapter<DietMeal> {
       ..writeByte(4)
       ..write(obj.tags)
       ..writeByte(5)
-      ..write(obj.calories);
+      ..write(obj.calories)
+      ..writeByte(6)
+      ..write(obj.recurrence)
+      ..writeByte(7)
+      ..write(obj.customDaysOfWeek)
+      ..writeByte(8)
+      ..write(obj.startDate)
+      ..writeByte(9)
+      ..write(obj.endDate)
+      ..writeByte(10)
+      ..write(obj.time)
+      ..writeByte(11)
+      ..write(obj.customDaysOfMonth);
   }
 
   @override

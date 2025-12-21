@@ -7,13 +7,14 @@ import 'package:love_routine_app/features/health/presentation/pages/health_page.
 import 'package:love_routine_app/features/education/presentation/pages/education_page.dart';
 import 'package:love_routine_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:love_routine_app/features/finance/presentation/pages/finance_page.dart';
+import 'package:love_routine_app/features/diets/presentation/pages/diet_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>();
 final _calendarNavigatorKey = GlobalKey<NavigatorState>();
-final _educationNavigatorKey = GlobalKey<NavigatorState>();
 final _healthNavigatorKey = GlobalKey<NavigatorState>();
 final _menuNavigatorKey = GlobalKey<NavigatorState>();
+final _financeNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -27,16 +28,7 @@ final router = GoRouter(
         StatefulShellBranch(
           navigatorKey: _homeNavigatorKey,
           routes: [
-            GoRoute(
-              path: '/',
-              builder: (context, state) => const HomeScreen(),
-              routes: [
-                GoRoute(
-                  path: 'finance',
-                  builder: (context, state) => const FinancePage(),
-                ),
-              ],
-            ),
+            GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           ],
         ),
         StatefulShellBranch(
@@ -49,16 +41,16 @@ final router = GoRouter(
           ],
         ),
         StatefulShellBranch(
-          navigatorKey: _educationNavigatorKey,
+          navigatorKey: _financeNavigatorKey,
           routes: [
             GoRoute(
-              path: '/education',
-              builder: (context, state) => const EducationPage(),
+              path: '/finance',
+              builder: (context, state) => const FinancePage(),
             ),
           ],
         ),
         StatefulShellBranch(
-          navigatorKey: _healthNavigatorKey, // Renaming key to match purpose
+          navigatorKey: _healthNavigatorKey,
           routes: [
             GoRoute(
               path: '/health',
@@ -72,6 +64,16 @@ final router = GoRouter(
             GoRoute(
               path: '/menu',
               builder: (context, state) => const SettingsPage(),
+              routes: [
+                GoRoute(
+                  path: 'education',
+                  builder: (context, state) => const EducationPage(),
+                ),
+                GoRoute(
+                  path: 'diet',
+                  builder: (context, state) => const DietPage(),
+                ),
+              ],
             ),
           ],
         ),

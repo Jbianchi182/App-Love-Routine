@@ -23,13 +23,15 @@ class MedicationAdapter extends TypeAdapter<Medication> {
       ..frequencyHours = fields[3] as int?
       ..startDate = fields[4] as DateTime
       ..endDate = fields[5] as DateTime?
-      ..nextDose = fields[6] as DateTime;
+      ..durationDays = fields[8] as int?
+      ..nextDose = fields[6] as DateTime
+      ..takenHistory = (fields[7] as List).cast<DateTime>();
   }
 
   @override
   void write(BinaryWriter writer, Medication obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -42,8 +44,12 @@ class MedicationAdapter extends TypeAdapter<Medication> {
       ..write(obj.startDate)
       ..writeByte(5)
       ..write(obj.endDate)
+      ..writeByte(8)
+      ..write(obj.durationDays)
       ..writeByte(6)
-      ..write(obj.nextDose);
+      ..write(obj.nextDose)
+      ..writeByte(7)
+      ..write(obj.takenHistory);
   }
 
   @override

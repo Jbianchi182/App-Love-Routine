@@ -31,6 +31,24 @@ class MedicationNotifier extends AsyncNotifier<List<Medication>> {
       return _fetchMedications();
     });
   }
+
+  Future<void> markAsTaken(Medication medication) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      final now = DateTime.now();
+      medication.takenHistory.add(now);
+
+      if (medication.frequencyHours != null) {
+        // Calculate next dose based on this taken time
+        medication.nextDose = now.add(
+          Duration(hours: medication.frequencyHours!),
+        );
+      }
+
+      await medication.save();
+      return _fetchMedications();
+    });
+  }
 }
 
 final medicationProvider =

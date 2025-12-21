@@ -23,16 +23,6 @@ class FinancePage extends ConsumerWidget {
       ),
       body: transactionsAsync.when(
         data: (transactions) {
-          final income = ref
-              .read(financeProvider.notifier)
-              .calculateBalance(
-                transactions
-                    .where((t) => t.type == TransactionType.income)
-                    .toList(),
-              ); // Note: calculateBalance logic in provider might need adjustment to generic sum if used this way,
-          // but checking provider again: calculates net balance.
-          // We need separate income/expense sum.
-
           double totalIncome = 0;
           double totalExpense = 0;
           for (var t in transactions) {

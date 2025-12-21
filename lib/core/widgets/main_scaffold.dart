@@ -10,7 +10,7 @@ class MainScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: NavigationBar(
@@ -27,25 +27,25 @@ class MainScaffold extends StatelessWidget {
             selectedIcon: const Icon(Icons.home),
             label: l10n.homeTitle,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar', // TODO: Localize
+          NavigationDestination(
+            icon: const Icon(Icons.calendar_month_outlined),
+            selectedIcon: const Icon(Icons.calendar_month),
+            label: l10n.calendarTitle,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.local_library_outlined),
-            selectedIcon: Icon(Icons.local_library),
-            label: 'Educação', // TODO: Localize
+          NavigationDestination(
+            icon: const Icon(Icons.attach_money_outlined),
+            selectedIcon: const Icon(Icons.attach_money),
+            label: l10n.financeTitle,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Bem-Estar', // TODO: Localize
+          NavigationDestination(
+            icon: const Icon(Icons.favorite_outline),
+            selectedIcon: const Icon(Icons.favorite),
+            label: l10n.healthTitle,
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.menu_outlined),
-            selectedIcon: Icon(Icons.menu),
-            label: 'Menu', // TODO: Localize
+          NavigationDestination(
+            icon: const Icon(Icons.menu_outlined),
+            selectedIcon: const Icon(Icons.menu),
+            label: l10n.menuTitle,
           ),
         ],
       ),

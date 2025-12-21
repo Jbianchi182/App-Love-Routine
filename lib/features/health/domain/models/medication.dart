@@ -23,7 +23,13 @@ class Medication extends HiveObject {
   @HiveField(5)
   DateTime? endDate;
 
+  @HiveField(8)
+  int? durationDays;
+
   // Next scheduled dose time
   @HiveField(6)
   late DateTime nextDose;
+
+  @HiveField(7)
+  List<DateTime> takenHistory = [];
 }

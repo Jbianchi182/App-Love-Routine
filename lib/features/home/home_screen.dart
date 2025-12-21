@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/home/presentation/providers/home_provider.dart';
 import 'package:love_routine_app/features/home/presentation/widgets/financial_summary_widget.dart';
@@ -25,10 +26,7 @@ class HomeScreen extends ConsumerWidget {
             onPressed: () {},
           ),
           const SizedBox(width: 8),
-          const CircleAvatar(
-            radius: 16,
-            child: Icon(Icons.person, size: 20),
-          ),
+          const CircleAvatar(radius: 16, child: Icon(Icons.person, size: 20)),
           const SizedBox(width: 16),
         ],
       ),
@@ -42,9 +40,12 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              FinancialSummaryWidget(
-                income: homeState.income,
-                expense: homeState.expense,
+              GestureDetector(
+                onTap: () => context.go('/finance'),
+                child: FinancialSummaryWidget(
+                  income: homeState.income,
+                  expense: homeState.expense,
+                ),
               ),
               const SizedBox(height: 16),
               const HomeCalendarWidget(),

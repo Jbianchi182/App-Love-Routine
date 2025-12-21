@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
 import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
 import 'package:love_routine_app/features/diets/presentation/widgets/diet_dialog.dart';
+import 'package:love_routine_app/features/diets/presentation/widgets/fasting_tracker_widget.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/routine_provider.dart';
 import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
@@ -52,9 +53,12 @@ class DietPage extends ConsumerWidget {
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: diets.length,
+            itemCount: diets.length + 1,
             itemBuilder: (context, index) {
-              final meal = diets[index];
+              if (index == 0) {
+                return const FastingTrackerWidget();
+              }
+              final meal = diets[index - 1];
               return Card(
                 elevation: 2,
                 margin: const EdgeInsets.only(bottom: 12),

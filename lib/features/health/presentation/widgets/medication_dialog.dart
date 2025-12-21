@@ -2,27 +2,76 @@ import 'package:flutter/material.dart';
 import 'package:love_routine_app/features/health/domain/models/medication.dart';
 import 'package:intl/intl.dart';
 
-class MedicationDialog extends StatelessWidget {
-  const MedicationDialog({super.key});
+class MedicationDialog extends StatefulWidget {
+  final Medication? medication;
+
+  const MedicationDialog({super.key, this.medication});
+
+  @override
+  State<MedicationDialog> createState() => _MedicationDialogState();
+}
+
+class _MedicationDialogState extends State<MedicationDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _dosageController;
+  late TextEditingController _frequencyController;
+  late TextEditingController _durationController;
+  late DateTime _startDate;
+  DateTime? _endDate;
+
+  @override
+  void initState() {
+    super.initState();
+    final med = widget.medication;
+    _nameController = TextEditingController(text: med?.name);
+    _dosageController = TextEditingController(text: med?.dosage);
+    _frequencyController = TextEditingController(
+      text: med?.frequencyHours?.toString(),
+    );
+    _durationController = TextEditingController(
+      text: med?.durationDays?.toString(),
+    );
+    _startDate = med?.startDate ?? DateTime.now();
+    _endDate = med?.endDate;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _dosageController.dispose();
+    _frequencyController.dispose();
+    _durationController.dispose();
+    super.dispose();
+  }
+
+  void _calculateEndDate() {
+    final days = int.tryParse(_durationController.text);
+    if (days != null) {
+      setState(() {
+        _endDate = _startDate.add(Duration(days: days));
+      });
+    } else {
+      setState(() {
+        _endDate = null;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final nameController = TextEditingController();
-    final dosageController = TextEditingController();
-    final frequencyController = TextEditingController(); // hours
-    DateTime startDate = DateTime.now();
-
     return AlertDialog(
-      title: const Text('Novo Medicamento'),
+      title: Text(
+        widget.medication == null ? 'Novo Medicamento' : 'Editar Medicamento',
+      ),
       content: SingleChildScrollView(
         child: Form(
-          key: formKey,
+          key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
-                controller: nameController,
+                controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Nome do Medicamento',
                 ),
@@ -30,7 +79,7 @@ class MedicationDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: dosageController,
+                controller: _dosageController,
                 decoration: const InputDecoration(
                   labelText: 'Dosagem (ex: 500mg)',
                 ),
@@ -39,7 +88,7 @@ class MedicationDialog extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: frequencyController,
+                controller: _frequencyController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Frequência (horas)',
@@ -47,13 +96,31 @@ class MedicationDialog extends StatelessWidget {
                 validator: (value) =>
                     value!.isEmpty ? 'Informe a frequência' : null,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _durationController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Duração (dias) - Opcional',
+                ),
+                onChanged: (_) => _calculateEndDate(),
+              ),
               const SizedBox(height: 16),
               InputDecorator(
                 decoration: const InputDecoration(
                   labelText: 'Início do tratamento',
                 ),
-                child: Text(DateFormat('dd/MM/yyyy HH:mm').format(startDate)),
+                child: Text(DateFormat('dd/MM/yyyy HH:mm').format(_startDate)),
               ),
+              if (_endDate != null) ...[
+                const SizedBox(height: 12),
+                InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'Fim do tratamento (Calculado)',
+                  ),
+                  child: Text(DateFormat('dd/MM/yyyy HH:mm').format(_endDate!)),
+                ),
+              ],
             ],
           ),
         ),
@@ -65,14 +132,22 @@ class MedicationDialog extends StatelessWidget {
         ),
         FilledButton(
           onPressed: () {
-            if (formKey.currentState!.validate()) {
-              final medication = Medication()
-                ..name = nameController.text
-                ..dosage = dosageController.text
-                ..frequencyHours = int.tryParse(frequencyController.text) ?? 8
-                ..startDate = startDate
-                ..nextDose =
-                    startDate; // logic to calculate real next dose would be here
+            if (_formKey.currentState!.validate()) {
+              final medication = widget.medication ?? Medication();
+              medication
+                ..name = _nameController.text
+                ..dosage = _dosageController.text
+                ..frequencyHours = int.tryParse(_frequencyController.text) ?? 8
+                ..durationDays = int.tryParse(_durationController.text)
+                ..startDate = _startDate
+                ..endDate = _endDate;
+
+              // Only set nextDose if new, otherwise preserve or update logic?
+              // If editing, maybe keep nextDose unless frequency changed?
+              // For simplicity, if new:
+              if (widget.medication == null) {
+                medication.nextDose = _startDate;
+              }
 
               Navigator.pop(context, medication);
             }

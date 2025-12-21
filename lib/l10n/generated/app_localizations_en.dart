@@ -28,4 +28,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get selectLanguage => 'Select Language';
+
+  @override
+  String get calendarTitle => 'Calendar';
+
+  @override
+  String get healthTitle => 'Health';
+
+  @override
+  String get educationTitle => 'Education';
+
+  @override
+  String get financeTitle => 'Finance';
+
+  @override
+  String get menuTitle => 'Menu';
 }

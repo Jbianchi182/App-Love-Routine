@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:love_routine_app/features/home/presentation/providers/home_provider.dart';
+import 'package:love_routine_app/features/calendar/presentation/providers/routine_provider.dart';
+import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
+import 'package:love_routine_app/features/health/presentation/providers/health_provider.dart';
+import 'package:love_routine_app/features/calendar/presentation/providers/calendar_logic_provider.dart';
 
 class HomeCalendarWidget extends ConsumerWidget {
   const HomeCalendarWidget({super.key});
@@ -12,6 +16,17 @@ class HomeCalendarWidget extends ConsumerWidget {
     final homeState = ref.watch(homeProvider);
     final notifier = ref.read(homeProvider.notifier);
     final theme = Theme.of(context);
+
+    // Watch providers for real data - indirectly watched by CalendarLogicProvider internally if we read it?
+    // Actually CalendarLogicProvider reads once. We need to watch it or the underlying data.
+    // The previous implementation watched routineProvider.
+    // We should watch the providers that affect the calendar.
+    ref.watch(routineProvider);
+    ref.watch(dietProvider);
+    ref.watch(medicationProvider);
+    ref.watch(appointmentProvider);
+
+    // No need to fetch routines list here, eventLoader handles it.
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -25,17 +40,21 @@ class HomeCalendarWidget extends ConsumerWidget {
           selectedDayPredicate: (day) => isSameDay(homeState.selectedDate, day),
           calendarFormat: CalendarFormat.month,
           locale: Localizations.localeOf(context).languageCode,
-          availableCalendarFormats: const {
-            CalendarFormat.month: 'Month',
-          },
+          availableCalendarFormats: const {CalendarFormat.month: 'Month'},
           headerStyle: HeaderStyle(
             titleCentered: true,
             formatButtonVisible: false,
             titleTextStyle: theme.textTheme.titleMedium!.copyWith(
               fontWeight: FontWeight.bold,
             ),
-            leftChevronIcon: Icon(Icons.chevron_left, color: theme.colorScheme.primary),
-            rightChevronIcon: Icon(Icons.chevron_right, color: theme.colorScheme.primary),
+            leftChevronIcon: Icon(
+              Icons.chevron_left,
+              color: theme.colorScheme.primary,
+            ),
+            rightChevronIcon: Icon(
+              Icons.chevron_right,
+              color: theme.colorScheme.primary,
+            ),
           ),
           calendarStyle: CalendarStyle(
             selectedDecoration: BoxDecoration(
@@ -53,16 +72,16 @@ class HomeCalendarWidget extends ConsumerWidget {
           ),
           onDaySelected: (selectedDay, focusedDay) {
             notifier.onDaySelected(selectedDay, focusedDay);
-            // Navigate to calendar tab with specific date details if needed
-             context.go('/calendar'); 
+            // Navigate to Calendar Page with selected date
+            context.go('/calendar');
           },
           onPageChanged: (focusedDay) {
             notifier.onPageChanged(focusedDay);
           },
-          // Mock event loader for markers
           eventLoader: (day) {
-            if (day.day % 2 == 0) return ['Event']; // Dummy marker logic
-            return [];
+            // Use unified logic to show dots for ALL events
+            final logic = ref.read(calendarLogicProvider);
+            return logic.getEventsForDay(day);
           },
           onHeaderTapped: (_) {
             context.go('/calendar');

@@ -28,4 +28,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get selectLanguage => 'Selecionar Idioma';
+
+  @override
+  String get calendarTitle => 'Calendário';
+
+  @override
+  String get healthTitle => 'Bem-Estar';
+
+  @override
+  String get educationTitle => 'Educação';
+
+  @override
+  String get financeTitle => 'Finanças';
+
+  @override
+  String get menuTitle => 'Menu';
 }

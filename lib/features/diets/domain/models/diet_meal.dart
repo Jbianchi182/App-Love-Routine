@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:love_routine_app/features/diets/domain/enums/diet_tag.dart';
+import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 
 part 'diet_meal.g.dart';
 
@@ -23,4 +24,22 @@ class DietMeal extends HiveObject {
   // Caloric estimate per portion
   @HiveField(5)
   double? calories;
+
+  @HiveField(6)
+  late RecurrenceType recurrence = RecurrenceType.daily;
+
+  @HiveField(7)
+  List<int>? customDaysOfWeek;
+
+  @HiveField(8)
+  late DateTime startDate = DateTime.now();
+
+  @HiveField(9)
+  DateTime? endDate;
+
+  @HiveField(10)
+  late DateTime time = DateTime.now();
+
+  @HiveField(11)
+  List<int>? customDaysOfMonth;
 }
