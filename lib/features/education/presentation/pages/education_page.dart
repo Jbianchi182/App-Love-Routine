@@ -4,6 +4,10 @@ import 'package:love_routine_app/features/education/domain/models/subject.dart';
 import 'package:love_routine_app/features/education/domain/models/grade_entry.dart';
 import 'package:love_routine_app/features/education/presentation/providers/education_provider.dart';
 import 'package:love_routine_app/features/education/presentation/widgets/subject_dialog.dart';
+import 'package:love_routine_app/features/education/presentation/pages/subject_details_page.dart';
+import 'package:love_routine_app/features/education/presentation/pages/grading_schemes_page.dart';
+import 'package:love_routine_app/features/education/presentation/providers/grading_scheme_provider.dart';
+import 'package:math_expressions/math_expressions.dart';
 import 'package:intl/intl.dart';
 
 class EducationPage extends ConsumerWidget {
@@ -15,7 +19,22 @@ class EducationPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Educação')),
+      appBar: AppBar(
+        title: const Text('Educação'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.functions),
+            tooltip: 'Gerenciar Fórmulas',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const GradingSchemesPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showSubjectDialog(context, ref),
         child: const Icon(Icons.add),
@@ -46,73 +65,127 @@ class EducationPage extends ConsumerWidget {
     Subject subject,
   ) {
     final grades = subject.grades.toList();
-    final average = _calculateAverage(grades);
+    // Use the same logic as details page? Ideally refactor to shared logic.
+    // For now, simpler approximation or duplicate logic?
+    // Let's rely on SubjectDetailsPage logic but simplified or copy logic.
+    // Ideally put logic in Subject model or provider?
+    // Let's assume standard weighted average for list view or implement formula calc here too.
+    // To implement formula calc here we need gradingSchemeProvider.
+    final average = _calculateAverage(grades, ref, subject);
     final passing = subject.passingScore ?? 6.0;
     final isPassing = average >= passing;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      child: ExpansionTile(
-        leading: CircleAvatar(
-          backgroundColor: isPassing
-              ? Colors.green.withOpacity(0.2)
-              : Colors.red.withOpacity(0.2),
-          child: Text(
-            average.toStringAsFixed(1),
-            style: TextStyle(
-              color: isPassing ? Colors.green : Colors.red,
-              fontWeight: FontWeight.bold,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => SubjectDetailsPage(subject: subject),
             ),
-          ),
-        ),
-        title: Text(
-          subject.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(subject.teacherName ?? 'Sem professor'),
-        children: [
-          if (grades.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text('Nenhuma nota lançada.'),
-            )
-          else
-            ...grades.map(
-              (grade) => ListTile(
-                dense: true,
-                title: Text(grade.name),
-                subtitle: Text(DateFormat('dd/MM').format(grade.date)),
-                trailing: Text(
-                  grade.score.toStringAsFixed(1),
-                  style: const TextStyle(
+          );
+        },
+        borderRadius: BorderRadius.circular(12), // Match card shape
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: isPassing
+                    ? Colors.green.withOpacity(0.2)
+                    : Colors.red.withOpacity(0.2),
+                child: Text(
+                  average.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: isPassing ? Colors.green : Colors.red,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
                   ),
                 ),
               ),
-            ),
-
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextButton.icon(
-              onPressed: () => _showAddGradeDialog(context, ref, subject),
-              icon: const Icon(Icons.add),
-              label: const Text('Adicionar Nota'),
-            ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      subject.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subject.teacherName ?? 'Sem professor',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  double _calculateAverage(List<GradeEntry> grades) {
+  double _calculateAverage(
+    List<GradeEntry> grades,
+    WidgetRef ref,
+    Subject subject,
+  ) {
     if (grades.isEmpty) return 0.0;
-    // Simple average for now. Weighted average logic to be added.
-    double sum = 0;
-    for (var g in grades) {
-      sum += g.score;
+
+    // Quick copy of logic from SubjectDetailsPage
+    // TODO: Refactor into a shared utility or extension
+    String? formulaToCheck;
+    if (subject.gradingSchemeId != null) {
+      final schemes = ref.read(gradingSchemeProvider).asData?.value ?? [];
+      // ignore: collection_methods_unrelated_type
+      final scheme = schemes
+          .where((s) => s.key == subject.gradingSchemeId)
+          .firstOrNull;
+      if (scheme != null) formulaToCheck = scheme.formula;
+    } else if (subject.gradingFormula != null &&
+        subject.gradingFormula!.trim().isNotEmpty) {
+      formulaToCheck = subject.gradingFormula!;
     }
-    return sum / grades.length;
+
+    if (formulaToCheck != null) {
+      try {
+        final parser = Parser();
+        final expression = parser.parse(formulaToCheck);
+        final context = ContextModel();
+
+        final tagSums = <String, double>{};
+        for (var g in grades) {
+          if (g.tag != null && g.tag!.isNotEmpty) {
+            tagSums[g.tag!] = (tagSums[g.tag!] ?? 0.0) + g.score;
+          }
+        }
+        for (var entry in tagSums.entries) {
+          context.bindVariable(Variable(entry.key), Number(entry.value));
+        }
+        return expression.evaluate(EvaluationType.REAL, context);
+      } catch (e) {
+        return 0.0;
+      }
+    }
+
+    // Default Weighted
+    double weightedSum = 0;
+    double totalWeight = 0;
+    for (var g in grades) {
+      final w = g.weight ?? 1.0;
+      weightedSum += g.score * w;
+      totalWeight += w;
+    }
+    if (totalWeight == 0) return 0.0;
+    return weightedSum / totalWeight;
   }
 
   Future<void> _showSubjectDialog(BuildContext context, WidgetRef ref) async {
@@ -122,68 +195,6 @@ class EducationPage extends ConsumerWidget {
     );
     if (result != null) {
       ref.read(educationProvider.notifier).addSubject(result);
-    }
-  }
-
-  Future<void> _showAddGradeDialog(
-    BuildContext context,
-    WidgetRef ref,
-    Subject subject,
-  ) async {
-    final scoreController = TextEditingController();
-    final nameController = TextEditingController();
-
-    final entry = await showDialog<GradeEntry>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Lançar Nota'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Descrição (ex: Prova 1)',
-              ),
-            ),
-            TextField(
-              controller: scoreController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Nota obtenuida'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final score = double.tryParse(scoreController.text);
-              if (score != null) {
-                Navigator.pop(
-                  context,
-                  GradeEntry()
-                    ..name = nameController.text.isEmpty
-                        ? 'Nota'
-                        : nameController.text
-                    ..score = score
-                    ..weight = 1.0
-                    ..date = DateTime.now(),
-                );
-              }
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
-      ),
-    );
-
-    if (entry != null) {
-      ref.read(educationProvider.notifier).addGrade(subject.key, entry);
     }
   }
 }

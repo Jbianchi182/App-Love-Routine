@@ -12,54 +12,87 @@ import 'package:love_routine_app/features/health/domain/models/medical_appointme
 import 'package:love_routine_app/features/health/domain/models/medication.dart';
 import 'package:love_routine_app/features/education/domain/models/subject.dart';
 import 'package:love_routine_app/features/education/domain/models/grade_entry.dart';
+import 'package:love_routine_app/features/education/domain/models/grading_scheme.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 import 'package:love_routine_app/features/diets/domain/enums/diet_tag.dart';
 import 'package:love_routine_app/features/finance/domain/models/finance_transaction.dart';
 import 'package:love_routine_app/features/finance/domain/enums/transaction_type.dart';
 import 'package:love_routine_app/features/finance/domain/enums/transaction_category.dart';
+import 'package:love_routine_app/features/home/domain/models/home_preferences.dart';
+import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
+import 'package:love_routine_app/features/shopping/domain/models/shopping_trip.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
+    await Hive.initFlutter();
 
-  // Register Adapters
-  // We need to register adapters for Enums if we didn't use HiveType on them (which we didn't explicitly, but Hive can handle if we annotate them or write adapters.
-  // However, for simplicity and since enums are small, we might need to annotate them or let Hive generate.
-  // Actually, Hive Generator handles Enums if annotated. I didn't annotate Enums in the models refactor?
-  // Checking models... RoutineStatus, RecurrenceType, DietTag seem to be used.
-  // If they are not annotated with @HiveType, we will have runtime errors.
-  // I should check Enums and annotate them!
+    // Register Adapters
+    Hive.registerAdapter(RoutineAdapter());
+    Hive.registerAdapter(RoutineHistoryEntryAdapter());
+    Hive.registerAdapter(DietMealAdapter());
+    Hive.registerAdapter(MedicalAppointmentAdapter());
+    Hive.registerAdapter(MedicationAdapter());
+    Hive.registerAdapter(SubjectAdapter());
+    Hive.registerAdapter(GradeEntryAdapter());
 
-  // Assuming generated adapters will be named like RoutineAdapter, etc.
-  Hive.registerAdapter(RoutineAdapter());
-  Hive.registerAdapter(RoutineHistoryEntryAdapter());
-  Hive.registerAdapter(DietMealAdapter());
-  Hive.registerAdapter(MedicalAppointmentAdapter());
-  Hive.registerAdapter(MedicationAdapter());
-  Hive.registerAdapter(SubjectAdapter());
-  Hive.registerAdapter(GradeEntryAdapter());
+    // Register Enum Adapters
+    Hive.registerAdapter(RoutineStatusAdapter());
+    Hive.registerAdapter(RecurrenceTypeAdapter());
+    Hive.registerAdapter(DietTagAdapter());
+    Hive.registerAdapter(FinanceTransactionAdapter());
+    Hive.registerAdapter(TransactionTypeAdapter());
+    Hive.registerAdapter(TransactionCategoryAdapter());
 
-  // Register Enum Adapters
-  Hive.registerAdapter(RoutineStatusAdapter());
-  Hive.registerAdapter(RecurrenceTypeAdapter());
-  Hive.registerAdapter(DietTagAdapter());
-  Hive.registerAdapter(FinanceTransactionAdapter());
-  Hive.registerAdapter(TransactionTypeAdapter());
-  Hive.registerAdapter(TransactionCategoryAdapter());
+    Hive.registerAdapter(GradingSchemeAdapter());
+    Hive.registerAdapter(HomePreferencesAdapter());
+    Hive.registerAdapter(ShoppingItemAdapter());
+    Hive.registerAdapter(ShoppingTripAdapter());
 
-  // Open Boxes
-  await Hive.openBox<Routine>('routines');
-  await Hive.openBox<DietMeal>('diet_meals');
-  await Hive.openBox<MedicalAppointment>('medical_appointments');
-  await Hive.openBox<Medication>('medications');
-  await Hive.openBox<Subject>('subjects');
-  // GradeEntry can be in a separate box or same if not accessed directly often.
-  // Given relationships, separate box is fine.
-  await Hive.openBox<GradeEntry>('grade_entries');
-  await Hive.openBox<FinanceTransaction>('transactions');
+    // Open Boxes
+    await Hive.openBox<Routine>('routines');
+    await Hive.openBox<DietMeal>('diet_meals');
+    await Hive.openBox<MedicalAppointment>('medical_appointments');
+    await Hive.openBox<Medication>('medications');
+    await Hive.openBox<Subject>('subjects');
+    await Hive.openBox<GradeEntry>('grade_entries');
+    await Hive.openBox<FinanceTransaction>('transactions');
+    await Hive.openBox<GradingScheme>('grading_schemes');
+    await Hive.openBox<HomePreferences>('home_preferences');
+    await Hive.openBox<ShoppingItem>('shopping_items');
+    await Hive.openBox<ShoppingTrip>('shopping_history');
 
-  runApp(const ProviderScope(child: LoveRoutineApp()));
+    runApp(const ProviderScope(child: LoveRoutineApp()));
+  } catch (e, stack) {
+    debugPrint('Startup Error: $e');
+    debugPrint(stack.toString());
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error, color: Colors.red, size: 64),
+                const SizedBox(height: 16),
+                const Text(
+                  'Erro ao iniciar o App:',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                SelectableText(e.toString()),
+                const SizedBox(height: 16),
+                const Text('Stack Trace:'),
+                SelectableText(stack.toString()),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class LoveRoutineApp extends ConsumerWidget {

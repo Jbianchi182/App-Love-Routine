@@ -4,21 +4,17 @@ import 'package:love_routine_app/features/calendar/presentation/providers/routin
 import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
 import 'package:love_routine_app/features/health/presentation/providers/health_provider.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/calendar_logic_provider.dart';
+import 'package:love_routine_app/features/calendar/domain/models/calendar_event.dart';
+import 'package:intl/intl.dart';
 
 class UpcomingEventsListWidget extends ConsumerWidget {
-  const UpcomingEventsListWidget({super.key});
+  final int daysToShow;
+
+  const UpcomingEventsListWidget({super.key, this.daysToShow = 7});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch providers for real data indirectly via Logic?
-    // Actually Logic Provider is a Reader, we need to watch the underlying providers to trigger rebuilds.
-    // However, getting events requires 'day'.
-
-    // Better strategy: Watch the underlying providers (happens in build) then use Logic to filter for TODAY.
-    // We can just watch 'calendarLogicProvider' if it exposed state, but it is a class with methods.
-    // The previous code watched 'routineProvider'. Use ref.watch on all relevant providers to trigger rebuild.
-    // We can use the same technique as CalendarPage or just watch them here.
-
+    // Watch providers to trigger rebuilds
     ref.watch(routineProvider);
     ref.watch(dietProvider);
     ref.watch(medicationProvider);
@@ -26,17 +22,38 @@ class UpcomingEventsListWidget extends ConsumerWidget {
 
     final logic = ref.read(calendarLogicProvider);
     final now = DateTime.now();
-    final todayEvents = logic.getEventsForDay(now);
 
-    // Filter for pending/future events for today
-    final pendingToday = todayEvents
-        .where(
-          (e) =>
-              !e.isCompleted &&
-              e.time.isAfter(now.subtract(const Duration(minutes: 30))),
-        ) // Show recent future
-        .take(5)
-        .toList();
+    // Collect events for the next 'daysToShow' days
+    final List<CalendarEvent> allEvents = [];
+    for (int i = 0; i < daysToShow; i++) {
+      final date = now.add(Duration(days: i));
+      final events = logic.getEventsForDay(date);
+      allEvents.addAll(events);
+    }
+
+    // Filter and Sort
+    // Filter out past completed events or past pending events if only showing future?
+    // User said "Proximos eventos".
+    final futureEvents = allEvents.where((e) {
+      if (e.isCompleted) return false; // Hide completed
+      // If today, hide passed time? Or show all remaining today?
+      // Simple logic: if start time is AFTER now (minus buffer)
+      if (e.time.year == now.year &&
+          e.time.month == now.month &&
+          e.time.day == now.day) {
+        return e.time.isAfter(now.subtract(const Duration(minutes: 15)));
+      }
+      return e.time.isAfter(now);
+    }).toList();
+
+    // Sort by time
+    futureEvents.sort((a, b) {
+      // Compare full timestamps
+      return a.time.compareTo(b.time);
+    });
+
+    // Limit to reasonable number? Or show all within range?
+    // User said "escolher quanto tempo deve aparecer". So range implies showing all within that range.
 
     final theme = Theme.of(context);
 
@@ -48,43 +65,44 @@ class UpcomingEventsListWidget extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
-              'Próximas Rotinas', // Quantified to Routines for now
+              'Próximos $daysToShow dias',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
           ),
-          if (pendingToday.isEmpty)
+          if (futureEvents.isEmpty)
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Nenhuma rotina pendente para hoje.'),
+                child: Text('Nada agendado para os próximos dias.'),
               ),
             )
           else
             ListView.builder(
-              physics:
-                  const NeverScrollableScrollPhysics(), // Nested inside other scroll view
+              physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: pendingToday.length,
+              itemCount: futureEvents.length,
               itemBuilder: (context, index) {
-                final routine = pendingToday[index];
+                final event = futureEvents[index];
                 return Card(
                   elevation: 1,
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: theme.colorScheme.secondaryContainer,
+                      backgroundColor: _getColorForType(
+                        event.type,
+                        theme,
+                      ).withOpacity(0.2),
                       child: Icon(
-                        Icons.event_note,
-                        color: theme.colorScheme.secondary,
+                        _getIconForType(event.type),
+                        color: _getColorForType(event.type, theme),
                       ),
                     ),
-                    title: Text(routine.title),
+                    title: Text(event.title),
                     subtitle: Text(
-                      '${routine.time.hour}:${routine.time.minute.toString().padLeft(2, '0')}',
+                      '${DateFormat('dd/MM').format(event.time)} - ${DateFormat('HH:mm').format(event.time)}',
                     ),
-                    trailing: const Icon(Icons.chevron_right),
                   ),
                 );
               },
@@ -92,5 +110,31 @@ class UpcomingEventsListWidget extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Color _getColorForType(CalendarEventType type, ThemeData theme) {
+    switch (type) {
+      case CalendarEventType.routine:
+        return theme.colorScheme.primary;
+      case CalendarEventType.diet:
+        return Colors.green;
+      case CalendarEventType.medication:
+        return Colors.redAccent;
+      case CalendarEventType.appointment:
+        return Colors.blue;
+    }
+  }
+
+  IconData _getIconForType(CalendarEventType type) {
+    switch (type) {
+      case CalendarEventType.routine:
+        return Icons.event_available;
+      case CalendarEventType.diet:
+        return Icons.restaurant;
+      case CalendarEventType.medication:
+        return Icons.medication;
+      case CalendarEventType.appointment:
+        return Icons.medical_services;
+    }
   }
 }

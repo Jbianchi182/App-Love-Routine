@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:love_routine_app/config/theme.dart';
 import 'package:love_routine_app/features/settings/presentation/providers/settings_provider.dart';
 import 'package:love_routine_app/l10n/generated/app_localizations.dart';
+import 'package:love_routine_app/features/home/presentation/providers/home_preferences_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -36,6 +37,20 @@ class SettingsPage extends ConsumerWidget {
             color: Colors.green,
             onTap: () => context.go('/menu/diet'),
           ),
+          const SizedBox(height: 8),
+          _buildMenuTile(
+            context,
+            icon: Icons.shopping_cart_outlined,
+            title: 'Lista de Compras',
+            color: Colors.purple,
+            onTap: () => context.go('/menu/shopping'),
+          ),
+
+          const Divider(height: 32),
+
+          // Home Preferences Section
+          _buildSectionHeader(context, 'Personalização da Home'),
+          _buildHomePreferences(context, ref),
 
           const Divider(height: 32),
 
@@ -133,6 +148,104 @@ class SettingsPage extends ConsumerWidget {
         return 'Mint Green';
       case AppThemeType.dark:
         return 'Midnight Dark';
+    }
+  }
+
+  Widget _buildHomePreferences(BuildContext context, WidgetRef ref) {
+    final prefsAsync = ref.watch(homePreferencesProvider);
+    final notifier = ref.read(homePreferencesProvider.notifier);
+
+    return prefsAsync.when(
+      data: (prefs) {
+        return Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+              child: Text(
+                'Ordem das Seções',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Card(
+              child: ReorderableListView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: prefs.sectionOrder.map((section) {
+                  return ListTile(
+                    key: ValueKey(section),
+                    title: Text(_getSectionName(section)),
+                    trailing: const Icon(Icons.drag_handle),
+                  );
+                }).toList(),
+                onReorder: (oldIndex, newIndex) {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final newOrder = List<String>.from(prefs.sectionOrder);
+                  final item = newOrder.removeAt(oldIndex);
+                  newOrder.insert(newIndex, item);
+                  notifier.updateSectionOrder(newOrder);
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+              child: Text(
+                'Dias de "Próximas Rotinas"',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Mostrar eventos para os próximos:'),
+                        Text(
+                          '${prefs.upcomingDaysRange} dias',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Slider(
+                      value: prefs.upcomingDaysRange.toDouble(),
+                      min: 1,
+                      max: 30,
+                      divisions: 29,
+                      label: '${prefs.upcomingDaysRange} dias',
+                      onChanged: (value) {
+                        notifier.updateUpcomingDays(value.toInt());
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Erro ao carregar preferências: $e'),
+    );
+  }
+
+  String _getSectionName(String section) {
+    switch (section) {
+      case 'finance':
+        return 'Resumo Financeiro';
+      case 'calendar':
+        return 'Calendário Mês';
+      case 'upcoming':
+        return 'Próximos Eventos';
+      default:
+        return section;
     }
   }
 }

@@ -90,14 +90,21 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 // Determine if there are any events for dots
                 return calendarLogic.getEventsForDay(day);
               },
+              onPageChanged: (focusedDay) {
+                _focusedDay = focusedDay;
+              },
               onDaySelected: (selectedDay, focusedDay) {
                 setState(() {
                   _selectedDay = selectedDay;
                   _focusedDay = focusedDay;
                 });
-              },
-              onPageChanged: (focusedDay) {
-                _focusedDay = focusedDay;
+
+                // Check for events
+                final events = calendarLogic.getEventsForDay(selectedDay);
+                if (events.isEmpty) {
+                  // If no events, open creation dialog automatically
+                  _showRoutineDialog(context);
+                }
               },
             ),
           ),

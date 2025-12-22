@@ -73,6 +73,24 @@ class EducationNotifier extends AsyncNotifier<List<Subject>> {
       return _fetchSubjects();
     });
   }
+
+  Future<void> addNote(Subject subject, String note) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      subject.notes.add(note);
+      await subject.save();
+      return _fetchSubjects();
+    });
+  }
+
+  Future<void> removeNote(Subject subject, String note) async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() async {
+      subject.notes.remove(note);
+      await subject.save();
+      return _fetchSubjects();
+    });
+  }
 }
 
 final educationProvider =

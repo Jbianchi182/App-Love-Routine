@@ -24,6 +24,15 @@ class Subject extends HiveObject {
   @HiveField(5)
   double? maxScore;
 
+  @HiveField(6)
+  List<String> notes = [];
+
+  @HiveField(7)
+  String? gradingFormula;
+
+  @HiveField(8)
+  int? gradingSchemeId;
+
   // Runtime only - populated by provider
   List<GradeEntry> grades = [];
 }

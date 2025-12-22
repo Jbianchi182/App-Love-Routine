@@ -21,4 +21,7 @@ class GradeEntry extends HiveObject {
 
   @HiveField(5)
   late int subjectId;
+
+  @HiveField(6)
+  String? tag;
 }

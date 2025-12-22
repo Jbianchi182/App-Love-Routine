@@ -5,6 +5,8 @@ import 'package:love_routine_app/features/home/presentation/providers/home_provi
 import 'package:love_routine_app/features/home/presentation/widgets/financial_summary_widget.dart';
 import 'package:love_routine_app/features/home/presentation/widgets/home_calendar_widget.dart';
 import 'package:love_routine_app/features/home/presentation/widgets/upcoming_events_list_widget.dart';
+import 'package:love_routine_app/features/home/presentation/providers/home_preferences_provider.dart';
+import 'package:love_routine_app/features/home/domain/models/home_preferences.dart';
 import 'package:love_routine_app/l10n/generated/app_localizations.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -13,8 +15,13 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch provider to ensure state is initialized
-    final homeState = ref.watch(homeProvider);
+    ref.watch(homeProvider); // Keep watching homeProvider for finance data
+    final prefsAsync = ref.watch(homePreferencesProvider);
+    final homeState = ref.read(homeProvider); // Read for finance widgets
     final l10n = AppLocalizations.of(context)!;
+
+    final prefs =
+        prefsAsync.asData?.value ?? HomePreferences(); // Default if loading
 
     return Scaffold(
       appBar: AppBar(
@@ -40,17 +47,35 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () => context.go('/finance'),
-                child: FinancialSummaryWidget(
-                  income: homeState.income,
-                  expense: homeState.expense,
-                ),
-              ),
-              const SizedBox(height: 16),
-              const HomeCalendarWidget(),
-              const SizedBox(height: 16),
-              const UpcomingEventsListWidget(),
+              ...prefs.sectionOrder.map((section) {
+                switch (section) {
+                  case 'finance':
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: GestureDetector(
+                        onTap: () => context.go('/finance'),
+                        child: FinancialSummaryWidget(
+                          income: homeState.income,
+                          expense: homeState.expense,
+                        ),
+                      ),
+                    );
+                  case 'calendar':
+                    return const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: HomeCalendarWidget(),
+                    );
+                  case 'upcoming':
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: UpcomingEventsListWidget(
+                        daysToShow: prefs.upcomingDaysRange,
+                      ),
+                    );
+                  default:
+                    return const SizedBox.shrink();
+                }
+              }),
               const SizedBox(height: 80), // Bottom padding for FAB or Nav Bar
             ],
           ),

@@ -8,6 +8,8 @@ import 'package:love_routine_app/features/education/presentation/pages/education
 import 'package:love_routine_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:love_routine_app/features/finance/presentation/pages/finance_page.dart';
 import 'package:love_routine_app/features/diets/presentation/pages/diet_page.dart';
+import 'package:love_routine_app/features/shopping/presentation/pages/shopping_list_page.dart';
+import 'package:love_routine_app/features/shopping/presentation/pages/shopping_history_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _homeNavigatorKey = GlobalKey<NavigatorState>();
@@ -72,6 +74,16 @@ final router = GoRouter(
                 GoRoute(
                   path: 'diet',
                   builder: (context, state) => const DietPage(),
+                ),
+                GoRoute(
+                  path: 'shopping',
+                  builder: (context, state) => const ShoppingListPage(),
+                  routes: [
+                    GoRoute(
+                      path: 'history',
+                      builder: (context, state) => const ShoppingHistoryPage(),
+                    ),
+                  ],
                 ),
               ],
             ),

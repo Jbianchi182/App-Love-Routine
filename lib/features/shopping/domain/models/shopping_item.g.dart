@@ -1,49 +1,44 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'grade_entry.dart';
+part of 'shopping_item.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class GradeEntryAdapter extends TypeAdapter<GradeEntry> {
+class ShoppingItemAdapter extends TypeAdapter<ShoppingItem> {
   @override
-  final int typeId = 6;
+  final int typeId = 13;
 
   @override
-  GradeEntry read(BinaryReader reader) {
+  ShoppingItem read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return GradeEntry()
-      ..id = fields[0] as int?
-      ..name = fields[1] as String
-      ..score = fields[2] as double
-      ..weight = fields[3] as double?
-      ..date = fields[4] as DateTime
-      ..subjectId = fields[5] as int
-      ..tag = fields[6] as String?;
+    return ShoppingItem(
+      name: fields[0] as String,
+      quantity: fields[1] as int,
+      isBought: fields[2] as bool,
+      category: fields[3] as String?,
+      price: fields[4] as double?,
+    );
   }
 
   @override
-  void write(BinaryWriter writer, GradeEntry obj) {
+  void write(BinaryWriter writer, ShoppingItem obj) {
     writer
-      ..writeByte(7)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.score)
-      ..writeByte(3)
-      ..write(obj.weight)
-      ..writeByte(4)
-      ..write(obj.date)
       ..writeByte(5)
-      ..write(obj.subjectId)
-      ..writeByte(6)
-      ..write(obj.tag);
+      ..writeByte(0)
+      ..write(obj.name)
+      ..writeByte(1)
+      ..write(obj.quantity)
+      ..writeByte(2)
+      ..write(obj.isBought)
+      ..writeByte(3)
+      ..write(obj.category)
+      ..writeByte(4)
+      ..write(obj.price);
   }
 
   @override
@@ -52,7 +47,7 @@ class GradeEntryAdapter extends TypeAdapter<GradeEntry> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is GradeEntryAdapter &&
+      other is ShoppingItemAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }
