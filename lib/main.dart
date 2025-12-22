@@ -22,6 +22,7 @@ import 'package:love_routine_app/features/finance/domain/enums/transaction_categ
 import 'package:love_routine_app/features/home/domain/models/home_preferences.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_trip.dart';
+import 'package:love_routine_app/features/finance/domain/models/payment_method.dart';
 
 void main() async {
   try {
@@ -49,6 +50,7 @@ void main() async {
     Hive.registerAdapter(HomePreferencesAdapter());
     Hive.registerAdapter(ShoppingItemAdapter());
     Hive.registerAdapter(ShoppingTripAdapter());
+    Hive.registerAdapter(PaymentMethodAdapter());
 
     // Open Boxes
     await Hive.openBox<Routine>('routines');
@@ -62,6 +64,7 @@ void main() async {
     await Hive.openBox<HomePreferences>('home_preferences');
     await Hive.openBox<ShoppingItem>('shopping_items');
     await Hive.openBox<ShoppingTrip>('shopping_history');
+    await Hive.openBox<PaymentMethod>('payment_methods');
 
     runApp(const ProviderScope(child: LoveRoutineApp()));
   } catch (e, stack) {

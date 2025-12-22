@@ -14,9 +14,13 @@ class ShoppingTrip extends HiveObject {
   @HiveField(2)
   late List<ShoppingItem> items;
 
+  @HiveField(3)
+  String? paymentMethodId;
+
   ShoppingTrip({
     required this.date,
     required this.totalAmount,
     required this.items,
+    this.paymentMethodId,
   });
 }

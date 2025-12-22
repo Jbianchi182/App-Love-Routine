@@ -20,19 +20,22 @@ class ShoppingTripAdapter extends TypeAdapter<ShoppingTrip> {
       date: fields[0] as DateTime,
       totalAmount: fields[1] as double,
       items: (fields[2] as List).cast<ShoppingItem>(),
+      paymentMethodId: fields[3] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, ShoppingTrip obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
       ..write(obj.totalAmount)
       ..writeByte(2)
-      ..write(obj.items);
+      ..write(obj.items)
+      ..writeByte(3)
+      ..write(obj.paymentMethodId);
   }
 
   @override

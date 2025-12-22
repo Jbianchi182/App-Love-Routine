@@ -23,4 +23,7 @@ class FinanceTransaction extends HiveObject {
 
   @HiveField(5)
   late TransactionCategory category;
+
+  @HiveField(6)
+  String? paymentMethodId;
 }
