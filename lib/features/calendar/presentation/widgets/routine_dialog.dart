@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
+import 'package:love_routine_app/features/calendar/presentation/widgets/card_style_selector.dart';
+import 'package:love_routine_app/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 class RoutineDialog extends ConsumerStatefulWidget {
@@ -22,6 +24,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
   late DateTime _startDate;
   late DateTime _time;
   late RecurrenceType _recurrence;
+  String? _cardStyle;
 
   @override
   void initState() {
@@ -32,6 +35,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
     _startDate = routine?.startDate ?? widget.initialDate ?? DateTime.now();
     _time = routine?.time ?? DateTime.now();
     _recurrence = routine?.recurrence ?? RecurrenceType.none;
+    _cardStyle = routine?.cardStyle;
   }
 
   @override
@@ -74,8 +78,10 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return AlertDialog(
-      title: Text(widget.routine == null ? 'Nova Rotina' : 'Editar Rotina'),
+      title: Text(widget.routine == null ? l10n.newRoutine : l10n.editRoutine),
       content: SingleChildScrollView(
         child: Form(
           key: _formKey,
@@ -84,14 +90,14 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
             children: [
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Título'),
+                decoration: InputDecoration(labelText: l10n.titleLabel),
                 validator: (value) =>
-                    value == null || value.isEmpty ? 'Informe o título' : null,
+                    value == null || value.isEmpty ? l10n.titleLabel : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Descrição'),
+                decoration: InputDecoration(labelText: l10n.descriptionLabel),
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
@@ -101,8 +107,8 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
                     child: InkWell(
                       onTap: _pickDate,
                       child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Data de Início',
+                        decoration: InputDecoration(
+                          labelText: l10n.startDateLabel,
                         ),
                         child: Text(
                           DateFormat('dd/MM/yyyy').format(_startDate),
@@ -115,7 +121,7 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
                     child: InkWell(
                       onTap: _pickTime,
                       child: InputDecorator(
-                        decoration: const InputDecoration(labelText: 'Horário'),
+                        decoration: InputDecoration(labelText: l10n.timeLabel),
                         child: Text(DateFormat('HH:mm').format(_time)),
                       ),
                     ),
@@ -124,16 +130,24 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<RecurrenceType>(
-                initialValue: _recurrence,
-                decoration: const InputDecoration(labelText: 'Repetição'),
+                value: _recurrence,
+                decoration: InputDecoration(labelText: l10n.recurrenceLabel),
                 items: RecurrenceType.values.map((type) {
                   return DropdownMenuItem(
                     value: type,
-                    child: Text(_getRecurrenceLabel(type)),
+                    child: Text(_getRecurrenceLabel(type, l10n)),
                   );
                 }).toList(),
                 onChanged: (value) {
                   if (value != null) setState(() => _recurrence = value);
+                },
+              ),
+              const SizedBox(height: 16),
+              CardStyleSelector(
+                key: ValueKey(_cardStyle),
+                selectedStyle: _cardStyle,
+                onStyleSelected: (style) {
+                  setState(() => _cardStyle = style);
                 },
               ),
             ],
@@ -143,9 +157,9 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
+          child: Text(l10n.cancelButton),
         ),
-        FilledButton(onPressed: _saveRoutine, child: const Text('Salvar')),
+        FilledButton(onPressed: _saveRoutine, child: Text(l10n.saveButton)),
       ],
     );
   }
@@ -161,24 +175,25 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
         ..description = _descriptionController.text
         ..startDate = _startDate
         ..time = _time
-        ..recurrence = _recurrence;
+        ..recurrence = _recurrence
+        ..cardStyle = _cardStyle;
 
       Navigator.pop(context, routine);
     }
   }
 
-  String _getRecurrenceLabel(RecurrenceType type) {
+  String _getRecurrenceLabel(RecurrenceType type, AppLocalizations l10n) {
     switch (type) {
       case RecurrenceType.none:
-        return 'Uma vez';
+        return l10n.recurrenceNone;
       case RecurrenceType.daily:
-        return 'Diariamente';
+        return l10n.recurrenceDaily;
       case RecurrenceType.weekly:
-        return 'Semanalmente';
+        return l10n.recurrenceWeekly;
       case RecurrenceType.monthly:
-        return 'Mensalmente';
+        return l10n.recurrenceMonthly;
       case RecurrenceType.custom:
-        return 'Personalizado';
+        return l10n.recurrenceCustom;
     }
   }
 }

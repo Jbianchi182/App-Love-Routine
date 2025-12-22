@@ -10,13 +10,19 @@ import 'package:love_routine_app/features/finance/presentation/pages/finance_pag
 import 'package:love_routine_app/features/diets/presentation/pages/diet_page.dart';
 import 'package:love_routine_app/features/shopping/presentation/pages/shopping_list_page.dart';
 import 'package:love_routine_app/features/shopping/presentation/pages/shopping_history_page.dart';
+import 'package:love_routine_app/features/menu/presentation/pages/categories_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
+// Define keys for all branches
 final _homeNavigatorKey = GlobalKey<NavigatorState>();
 final _calendarNavigatorKey = GlobalKey<NavigatorState>();
-final _healthNavigatorKey = GlobalKey<NavigatorState>();
-final _menuNavigatorKey = GlobalKey<NavigatorState>();
 final _financeNavigatorKey = GlobalKey<NavigatorState>();
+final _healthNavigatorKey = GlobalKey<NavigatorState>();
+final _educationNavigatorKey = GlobalKey<NavigatorState>();
+final _dietNavigatorKey = GlobalKey<NavigatorState>();
+final _shoppingNavigatorKey = GlobalKey<NavigatorState>();
+final _categoriesNavigatorKey = GlobalKey<NavigatorState>();
+final _settingsNavigatorKey = GlobalKey<NavigatorState>();
 
 final router = GoRouter(
   navigatorKey: _rootNavigatorKey,
@@ -27,12 +33,14 @@ final router = GoRouter(
         return MainScaffold(navigationShell: navigationShell);
       },
       branches: [
+        // 0. Home
         StatefulShellBranch(
           navigatorKey: _homeNavigatorKey,
           routes: [
             GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           ],
         ),
+        // 1. Calendar
         StatefulShellBranch(
           navigatorKey: _calendarNavigatorKey,
           routes: [
@@ -42,6 +50,7 @@ final router = GoRouter(
             ),
           ],
         ),
+        // 2. Finance
         StatefulShellBranch(
           navigatorKey: _financeNavigatorKey,
           routes: [
@@ -51,6 +60,7 @@ final router = GoRouter(
             ),
           ],
         ),
+        // 3. Health
         StatefulShellBranch(
           navigatorKey: _healthNavigatorKey,
           routes: [
@@ -60,32 +70,61 @@ final router = GoRouter(
             ),
           ],
         ),
+        // 4. Education
         StatefulShellBranch(
-          navigatorKey: _menuNavigatorKey,
+          navigatorKey: _educationNavigatorKey,
           routes: [
             GoRoute(
-              path: '/menu',
-              builder: (context, state) => const SettingsPage(),
+              path: '/education',
+              builder: (context, state) => const EducationPage(),
+            ),
+          ],
+        ),
+        // 5. Diet
+        StatefulShellBranch(
+          navigatorKey: _dietNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/diet',
+              builder: (context, state) => const DietPage(),
+            ),
+          ],
+        ),
+        // 6. Shopping
+        StatefulShellBranch(
+          navigatorKey: _shoppingNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/shopping',
+              builder: (context, state) => const ShoppingListPage(),
               routes: [
                 GoRoute(
-                  path: 'education',
-                  builder: (context, state) => const EducationPage(),
-                ),
-                GoRoute(
-                  path: 'diet',
-                  builder: (context, state) => const DietPage(),
-                ),
-                GoRoute(
-                  path: 'shopping',
-                  builder: (context, state) => const ShoppingListPage(),
-                  routes: [
-                    GoRoute(
-                      path: 'history',
-                      builder: (context, state) => const ShoppingHistoryPage(),
-                    ),
-                  ],
+                  path: 'history',
+                  builder: (context, state) => const ShoppingHistoryPage(),
                 ),
               ],
+            ),
+          ],
+        ),
+        // 7. Categories (Menu)
+        StatefulShellBranch(
+          navigatorKey: _categoriesNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/categories',
+              builder: (context, state) => const CategoriesPage(),
+              // Note: Sub-routes here are removed because they are now top-level branches.
+              // Navigation from CategoriesPage will use context.go('/finance') etc.
+            ),
+          ],
+        ),
+        // 8. Settings
+        StatefulShellBranch(
+          navigatorKey: _settingsNavigatorKey,
+          routes: [
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const SettingsPage(),
             ),
           ],
         ),

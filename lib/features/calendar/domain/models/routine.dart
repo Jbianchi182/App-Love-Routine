@@ -38,6 +38,9 @@ class Routine extends HiveObject {
 
   @HiveField(10)
   List<RoutineHistoryEntry> history = [];
+
+  @HiveField(11)
+  String? cardStyle;
 }
 
 @HiveType(typeId: 1)

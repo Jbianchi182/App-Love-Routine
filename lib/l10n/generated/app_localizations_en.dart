@@ -43,4 +43,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get menuTitle => 'Menu';
+
+  @override
+  String get dietTitle => 'Diet';
+
+  @override
+  String get shoppingTitle => 'Shopping';
+
+  @override
+  String get hello => 'Hello,';
+
+  @override
+  String get nothingScheduled => 'Nothing scheduled for the next few days.';
+
+  @override
+  String get errorLoading => 'Error loading';
+
+  @override
+  String get customizeMenu => 'Customize Bottom Menu';
+
+  @override
+  String get dragToReorder => 'Drag to reorder items';
+
+  @override
+  String get newRoutine => 'New Routine';
+
+  @override
+  String get editRoutine => 'Edit Routine';
+
+  @override
+  String get titleLabel => 'Title';
+
+  @override
+  String get descriptionLabel => 'Description';
+
+  @override
+  String get startDateLabel => 'Start Date';
+
+  @override
+  String get timeLabel => 'Time';
+
+  @override
+  String get recurrenceLabel => 'Recurrence';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get recurrenceNone => 'Once';
+
+  @override
+  String get recurrenceDaily => 'Daily';
+
+  @override
+  String get recurrenceWeekly => 'Weekly';
+
+  @override
+  String get recurrenceMonthly => 'Monthly';
+
+  @override
+  String get recurrenceCustom => 'Custom';
+
+  @override
+  String get cardStyleLabel => 'Card Style';
 }

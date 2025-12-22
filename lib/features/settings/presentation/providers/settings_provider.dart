@@ -7,14 +7,11 @@ class SettingsState {
   final Locale locale;
 
   SettingsState({
-    this.themeType = AppThemeType.strawberry,
+    this.themeType = AppThemeType.rosa,
     this.locale = const Locale('pt'), // Default to Portuguese per user context
   });
 
-  SettingsState copyWith({
-    AppThemeType? themeType,
-    Locale? locale,
-  }) {
+  SettingsState copyWith({AppThemeType? themeType, Locale? locale}) {
     return SettingsState(
       themeType: themeType ?? this.themeType,
       locale: locale ?? this.locale,

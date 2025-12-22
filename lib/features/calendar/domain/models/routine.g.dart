@@ -27,13 +27,14 @@ class RoutineAdapter extends TypeAdapter<Routine> {
       ..customDaysOfWeek = (fields[7] as List?)?.cast<int>()
       ..interval = fields[8] as int?
       ..status = fields[9] as RoutineStatus
-      ..history = (fields[10] as List).cast<RoutineHistoryEntry>();
+      ..history = (fields[10] as List).cast<RoutineHistoryEntry>()
+      ..cardStyle = fields[11] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Routine obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -55,7 +56,9 @@ class RoutineAdapter extends TypeAdapter<Routine> {
       ..writeByte(9)
       ..write(obj.status)
       ..writeByte(10)
-      ..write(obj.history);
+      ..write(obj.history)
+      ..writeByte(11)
+      ..write(obj.cardStyle);
   }
 
   @override

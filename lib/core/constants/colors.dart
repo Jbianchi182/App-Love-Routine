@@ -5,7 +5,7 @@ class AppColors {
   static const Color strawberryPrimary = Color(0xFFFFA6C1);
   static const Color strawberrySecondary = Color(0xFFFFD1DC);
   static const Color strawberryBackground = Color(0xFFFFF0F5);
-  
+
   // Peach / Orange
   static const Color peachPrimary = Color(0xFFFFB38E);
   static const Color peachSecondary = Color(0xFFFFDAB9);
@@ -20,6 +20,14 @@ class AppColors {
   static const Color mintPrimary = Color(0xFF98FB98);
   static const Color mintSecondary = Color(0xFFC1F0C1);
   static const Color mintBackground = Color(0xFFF0FFF0);
+
+  // Light / Neutral
+  static const Color lightPrimary = Color(
+    0xFF6200EE,
+  ); // Standard Material Purple or similar
+  static const Color lightSecondary = Color(0xFF03DAC6);
+  static const Color lightBackground = Color(0xFFFFFFFF);
+  static const Color lightSurface = Color(0xFFF5F5F5);
 
   // Dark Mode
   static const Color darkPrimary = Color(0xFFBB86FC);

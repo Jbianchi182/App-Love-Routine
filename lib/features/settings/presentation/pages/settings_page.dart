@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+
 import 'package:love_routine_app/config/theme.dart';
 import 'package:love_routine_app/features/settings/presentation/providers/settings_provider.dart';
 import 'package:love_routine_app/l10n/generated/app_localizations.dart';
@@ -20,35 +20,6 @@ class SettingsPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Navigation Section
-          _buildSectionHeader(context, 'Acesso Rápido'), // TODO: Localize
-          _buildMenuTile(
-            context,
-            icon: Icons.local_library_outlined,
-            title: l10n.educationTitle, // 'Educação'
-            color: Colors.orange,
-            onTap: () => context.go('/menu/education'),
-          ),
-          const SizedBox(height: 8),
-          _buildMenuTile(
-            context,
-            icon: Icons.restaurant_menu_outlined,
-            title: 'Dieta', // TODO: Localize
-            color: Colors.green,
-            onTap: () => context.go('/menu/diet'),
-          ),
-          const SizedBox(height: 8),
-          _buildMenuTile(
-            context,
-            icon: Icons.shopping_cart_outlined,
-            title: 'Lista de Compras',
-            color: Colors.purple,
-            onTap: () => context.go('/menu/shopping'),
-          ),
-
-          const Divider(height: 32),
-
-          // Home Preferences Section
           _buildSectionHeader(context, 'Personalização da Home'),
           _buildHomePreferences(context, ref),
 
@@ -102,27 +73,6 @@ class SettingsPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuTile(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      elevation: 2,
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.1),
-          child: Icon(icon, color: color),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: onTap,
-      ),
-    );
-  }
-
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -138,16 +88,16 @@ class SettingsPage extends ConsumerWidget {
 
   String _getThemeName(AppThemeType type) {
     switch (type) {
-      case AppThemeType.strawberry:
-        return 'Strawberry Pink';
-      case AppThemeType.peach:
-        return 'Peach Orange';
-      case AppThemeType.sky:
-        return 'Sky Blue';
-      case AppThemeType.mint:
-        return 'Mint Green';
-      case AppThemeType.dark:
-        return 'Midnight Dark';
+      case AppThemeType.rosa:
+        return 'Rosa';
+      case AppThemeType.salmao:
+        return 'Salmão';
+      case AppThemeType.verde:
+        return 'Verde';
+      case AppThemeType.claro:
+        return 'Claro';
+      case AppThemeType.escuro:
+        return 'Escuro';
     }
   }
 
@@ -188,6 +138,8 @@ class SettingsPage extends ConsumerWidget {
                 },
               ),
             ),
+            const SizedBox(height: 16),
+            _buildNavigationOrder(context, ref),
             const SizedBox(height: 16),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
@@ -234,6 +186,109 @@ class SettingsPage extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Text('Erro ao carregar preferências: $e'),
     );
+  }
+
+  Widget _buildNavigationOrder(BuildContext context, WidgetRef ref) {
+    final prefsAsync = ref.watch(homePreferencesProvider);
+    final notifier = ref.read(homePreferencesProvider.notifier);
+
+    return prefsAsync.when(
+      data: (prefs) {
+        // Full list of available modules to sort
+        const allModules = [
+          'calendar',
+          'finance',
+          'health',
+          'education',
+          'diet',
+          'shopping',
+        ];
+
+        // Current pinned list might be partial or contain old data.
+        // We merge with allModules to ensure we show everything.
+        final currentList = List<String>.from(prefs.pinnedModules);
+
+        // Add missing modules to the end
+        for (final m in allModules) {
+          if (!currentList.contains(m)) currentList.add(m);
+        }
+
+        // Remove invalid ones
+        currentList.removeWhere((m) => !allModules.contains(m));
+
+        return Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+              child: Text(
+                'Personalizar Menu Inferior (Top 3 aparecem)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Card(
+              child: ReorderableListView(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                header: const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Text(
+                    'Arraste para reordenar. Os 3 primeiros serão fixados no menu.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ),
+                children: currentList.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final module = entry.value;
+                  final isPinned = index < 3;
+
+                  return ListTile(
+                    key: ValueKey(module),
+                    leading: Icon(
+                      isPinned ? Icons.push_pin : Icons.circle_outlined,
+                      color: isPinned
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey,
+                    ),
+                    title: Text(_getModuleName(module)),
+                    trailing: const Icon(Icons.drag_handle),
+                  );
+                }).toList(),
+                onReorder: (oldIndex, newIndex) {
+                  if (oldIndex < newIndex) {
+                    newIndex -= 1;
+                  }
+                  final newOrder = List<String>.from(currentList);
+                  final item = newOrder.removeAt(oldIndex);
+                  newOrder.insert(newIndex, item);
+                  notifier.updatePinnedModules(newOrder); // Save full list
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  String _getModuleName(String module) {
+    switch (module) {
+      case 'calendar':
+        return 'Calendário';
+      case 'finance':
+        return 'Finanças';
+      case 'health':
+        return 'Saúde';
+      case 'education':
+        return 'Estudos';
+      case 'diet':
+        return 'Dieta';
+      case 'shopping':
+        return 'Mercado';
+      default:
+        return module;
+    }
   }
 
   String _getSectionName(String section) {

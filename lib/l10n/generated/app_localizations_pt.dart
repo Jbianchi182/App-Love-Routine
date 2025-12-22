@@ -43,4 +43,70 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get menuTitle => 'Menu';
+
+  @override
+  String get dietTitle => 'Dieta';
+
+  @override
+  String get shoppingTitle => 'Compras';
+
+  @override
+  String get hello => 'Olá,';
+
+  @override
+  String get nothingScheduled => 'Nada agendado para os próximos dias.';
+
+  @override
+  String get errorLoading => 'Erro ao carregar';
+
+  @override
+  String get customizeMenu => 'Personalizar Menu Inferior';
+
+  @override
+  String get dragToReorder => 'Arraste para reordenar os itens';
+
+  @override
+  String get newRoutine => 'Nova Rotina';
+
+  @override
+  String get editRoutine => 'Editar Rotina';
+
+  @override
+  String get titleLabel => 'Título';
+
+  @override
+  String get descriptionLabel => 'Descrição';
+
+  @override
+  String get startDateLabel => 'Data de Início';
+
+  @override
+  String get timeLabel => 'Horário';
+
+  @override
+  String get recurrenceLabel => 'Repetição';
+
+  @override
+  String get saveButton => 'Salvar';
+
+  @override
+  String get cancelButton => 'Cancelar';
+
+  @override
+  String get recurrenceNone => 'Uma vez';
+
+  @override
+  String get recurrenceDaily => 'Diariamente';
+
+  @override
+  String get recurrenceWeekly => 'Semanalmente';
+
+  @override
+  String get recurrenceMonthly => 'Mensalmente';
+
+  @override
+  String get recurrenceCustom => 'Personalizado';
+
+  @override
+  String get cardStyleLabel => 'Estilo do Card';
 }

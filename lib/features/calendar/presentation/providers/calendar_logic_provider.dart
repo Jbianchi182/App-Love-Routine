@@ -57,6 +57,7 @@ class CalendarLogic {
             isCompleted:
                 routine.status == RoutineStatus.completedOnTime ||
                 routine.status == RoutineStatus.completedLate,
+            cardStyle: routine.cardStyle,
           ),
         );
       }

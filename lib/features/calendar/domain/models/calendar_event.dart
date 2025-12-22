@@ -15,5 +15,8 @@ class CalendarEvent {
     required this.type,
     required this.originalObject,
     this.isCompleted = false,
+    this.cardStyle,
   });
+
+  final String? cardStyle;
 }

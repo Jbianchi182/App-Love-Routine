@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:love_routine_app/core/constants/colors.dart';
 
-enum AppThemeType { strawberry, peach, sky, mint, dark }
+enum AppThemeType { rosa, salmao, verde, claro, escuro }
 
 class AppTheme {
   static ThemeData getTheme(AppThemeType type) {
     switch (type) {
-      case AppThemeType.strawberry:
+      case AppThemeType.rosa:
         return _buildTheme(
           primary: AppColors.strawberryPrimary,
           secondary: AppColors.strawberrySecondary,
@@ -15,7 +15,7 @@ class AppTheme {
           surface: Colors.white,
           brightness: Brightness.light,
         );
-      case AppThemeType.peach:
+      case AppThemeType.salmao:
         return _buildTheme(
           primary: AppColors.peachPrimary,
           secondary: AppColors.peachSecondary,
@@ -23,15 +23,7 @@ class AppTheme {
           surface: Colors.white,
           brightness: Brightness.light,
         );
-      case AppThemeType.sky:
-        return _buildTheme(
-          primary: AppColors.skyPrimary,
-          secondary: AppColors.skySecondary,
-          background: AppColors.skyBackground,
-          surface: Colors.white,
-          brightness: Brightness.light,
-        );
-      case AppThemeType.mint:
+      case AppThemeType.verde:
         return _buildTheme(
           primary: AppColors.mintPrimary,
           secondary: AppColors.mintSecondary,
@@ -39,7 +31,15 @@ class AppTheme {
           surface: Colors.white,
           brightness: Brightness.light,
         );
-      case AppThemeType.dark:
+      case AppThemeType.claro:
+        return _buildTheme(
+          primary: AppColors.lightPrimary,
+          secondary: AppColors.lightSecondary,
+          background: AppColors.lightBackground,
+          surface: AppColors.lightSurface,
+          brightness: Brightness.light,
+        );
+      case AppThemeType.escuro:
         return _buildTheme(
           primary: AppColors.darkPrimary,
           secondary: AppColors.darkSecondary,

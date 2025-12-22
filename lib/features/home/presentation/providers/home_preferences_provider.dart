@@ -27,11 +27,30 @@ class HomePreferencesNotifier extends AsyncNotifier<HomePreferences> {
   }
 
   Future<void> updateUpcomingDays(int days) async {
-    final box = Hive.box<HomePreferences>(boxName);
-    final prefs = state.value!;
-    prefs.upcomingDaysRange = days;
-    await prefs.save();
-    state = AsyncValue.data(prefs);
+    if (state.hasValue) {
+      final prefs = state.value!;
+      prefs.upcomingDaysRange = days;
+      await prefs.save();
+      state = AsyncData(prefs);
+    }
+  }
+
+  Future<void> updatePinnedModules(List<String> modules) async {
+    if (state.hasValue) {
+      final prefs = state.value!;
+      prefs.pinnedModules = modules;
+      await prefs.save();
+      state = AsyncData(prefs);
+    }
+  }
+
+  Future<void> toggleMenuView() async {
+    if (state.hasValue) {
+      final prefs = state.value!;
+      prefs.isGridView = !prefs.isGridView;
+      await prefs.save();
+      state = AsyncData(prefs);
+    }
   }
 }
 

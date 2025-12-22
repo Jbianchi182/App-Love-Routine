@@ -18,17 +18,23 @@ class HomePreferencesAdapter extends TypeAdapter<HomePreferences> {
     };
     return HomePreferences()
       ..sectionOrder = (fields[0] as List).cast<String>()
-      ..upcomingDaysRange = fields[1] as int;
+      ..upcomingDaysRange = fields[1] as int
+      ..pinnedModules = (fields[2] as List).cast<String>()
+      ..isGridView = fields[3] as bool;
   }
 
   @override
   void write(BinaryWriter writer, HomePreferences obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.sectionOrder)
       ..writeByte(1)
-      ..write(obj.upcomingDaysRange);
+      ..write(obj.upcomingDaysRange)
+      ..writeByte(2)
+      ..write(obj.pinnedModules)
+      ..writeByte(3)
+      ..write(obj.isGridView);
   }
 
   @override

@@ -9,4 +9,10 @@ class HomePreferences extends HiveObject {
 
   @HiveField(1)
   int upcomingDaysRange = 7;
+
+  @HiveField(2)
+  List<String> pinnedModules = ['calendar', 'finance', 'health'];
+
+  @HiveField(3)
+  bool isGridView = true;
 }
