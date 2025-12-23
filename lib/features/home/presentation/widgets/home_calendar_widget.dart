@@ -9,7 +9,9 @@ import 'package:love_routine_app/features/health/presentation/providers/health_p
 import 'package:love_routine_app/features/calendar/presentation/providers/calendar_logic_provider.dart';
 
 class HomeCalendarWidget extends ConsumerWidget {
-  const HomeCalendarWidget({super.key});
+  final Function(DateTime)? onDaySelected;
+
+  const HomeCalendarWidget({super.key, this.onDaySelected});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -39,7 +41,7 @@ class HomeCalendarWidget extends ConsumerWidget {
           focusedDay: homeState.focusedDate,
           selectedDayPredicate: (day) => isSameDay(homeState.selectedDate, day),
           calendarFormat: CalendarFormat.month,
-          locale: Localizations.localeOf(context).languageCode,
+          locale: Localizations.localeOf(context).toString(),
           availableCalendarFormats: const {CalendarFormat.month: 'Month'},
           headerStyle: HeaderStyle(
             titleCentered: true,
@@ -72,8 +74,9 @@ class HomeCalendarWidget extends ConsumerWidget {
           ),
           onDaySelected: (selectedDay, focusedDay) {
             notifier.onDaySelected(selectedDay, focusedDay);
-            // Navigate to Calendar Page with selected date
-            context.go('/calendar');
+            if (onDaySelected != null) {
+              onDaySelected!(selectedDay);
+            }
           },
           onPageChanged: (focusedDay) {
             notifier.onPageChanged(focusedDay);
@@ -84,7 +87,7 @@ class HomeCalendarWidget extends ConsumerWidget {
             return logic.getEventsForDay(day);
           },
           onHeaderTapped: (_) {
-            context.go('/calendar');
+            // No navigation
           },
         ),
       ),

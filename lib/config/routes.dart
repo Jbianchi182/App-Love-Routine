@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:love_routine_app/core/widgets/main_scaffold.dart';
 import 'package:love_routine_app/features/home/home_screen.dart';
-import 'package:love_routine_app/features/calendar/presentation/pages/calendar_page.dart';
+
 import 'package:love_routine_app/features/health/presentation/pages/health_page.dart';
 import 'package:love_routine_app/features/education/presentation/pages/education_page.dart';
 import 'package:love_routine_app/features/settings/presentation/pages/settings_page.dart';
@@ -15,7 +15,7 @@ import 'package:love_routine_app/features/menu/presentation/pages/categories_pag
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 // Define keys for all branches
 final _homeNavigatorKey = GlobalKey<NavigatorState>();
-final _calendarNavigatorKey = GlobalKey<NavigatorState>();
+
 final _financeNavigatorKey = GlobalKey<NavigatorState>();
 final _healthNavigatorKey = GlobalKey<NavigatorState>();
 final _educationNavigatorKey = GlobalKey<NavigatorState>();
@@ -40,16 +40,7 @@ final router = GoRouter(
             GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
           ],
         ),
-        // 1. Calendar
-        StatefulShellBranch(
-          navigatorKey: _calendarNavigatorKey,
-          routes: [
-            GoRoute(
-              path: '/calendar',
-              builder: (context, state) => const CalendarPage(),
-            ),
-          ],
-        ),
+
         // 2. Finance
         StatefulShellBranch(
           navigatorKey: _financeNavigatorKey,

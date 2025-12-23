@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
+import 'package:love_routine_app/config/card_styles.dart';
+import 'package:love_routine_app/features/home/presentation/widgets/custom_task_card.dart';
 import 'package:love_routine_app/features/calendar/presentation/widgets/card_style_selector.dart';
 import 'package:love_routine_app/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
@@ -20,28 +22,29 @@ class RoutineDialog extends ConsumerStatefulWidget {
 class _RoutineDialogState extends ConsumerState<RoutineDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
-  late TextEditingController _descriptionController;
   late DateTime _startDate;
   late DateTime _time;
   late RecurrenceType _recurrence;
   String? _cardStyle;
+  double _imageAlignmentY = 0.0;
+  double _fontSize = 16.0;
 
   @override
   void initState() {
     super.initState();
     final routine = widget.routine;
     _titleController = TextEditingController(text: routine?.title);
-    _descriptionController = TextEditingController(text: routine?.description);
     _startDate = routine?.startDate ?? widget.initialDate ?? DateTime.now();
     _time = routine?.time ?? DateTime.now();
     _recurrence = routine?.recurrence ?? RecurrenceType.none;
     _cardStyle = routine?.cardStyle;
+    _imageAlignmentY = routine?.imageAlignmentY ?? 0.0;
+    _fontSize = routine?.fontSize ?? 16.0;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -88,17 +91,13 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Preview
               TextFormField(
                 controller: _titleController,
                 decoration: InputDecoration(labelText: l10n.titleLabel),
+                onChanged: (_) => setState(() {}), // Update preview
                 validator: (value) =>
                     value == null || value.isEmpty ? l10n.titleLabel : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: InputDecoration(labelText: l10n.descriptionLabel),
-                maxLines: 3,
               ),
               const SizedBox(height: 16),
               Row(
@@ -150,35 +149,109 @@ class _RoutineDialogState extends ConsumerState<RoutineDialog> {
                   setState(() => _cardStyle = style);
                 },
               ),
+              if (_cardStyle != null && _cardStyle != 'default') ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Ajuste da Imagem', // TODO: Localize
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                Slider(
+                  value: _imageAlignmentY,
+                  min: -1.0,
+                  max: 1.0,
+                  label: "Posição Vertical",
+                  onChanged: (val) => setState(() => _imageAlignmentY = val),
+                  activeColor: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Tamanho da Fonte', // TODO: Localize
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                Slider(
+                  value: _fontSize,
+                  min: 10.0,
+                  max: 30.0,
+                  label: "Tamanho: ${_fontSize.toInt()}",
+                  onChanged: (val) => setState(() => _fontSize = val),
+                  activeColor: Theme.of(context).colorScheme.primary,
+                ),
+              ],
+              if (_cardStyle != null && _cardStyle != 'default') ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Pré-visualização',
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                CustomTaskCard(
+                  title: _titleController.text.isEmpty
+                      ? 'Título da Rotina'
+                      : _titleController.text,
+                  time: DateFormat('HH:mm').format(_time),
+                  backgroundImagePath: CardStyles.getAsset(_cardStyle),
+                  imageAlignmentY: _imageAlignmentY,
+                  fontSize: _fontSize,
+                  isCompleted: false,
+                  onCheckboxChanged: (val) {},
+                ),
+              ],
             ],
           ),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
           child: Text(l10n.cancelButton),
         ),
-        FilledButton(onPressed: _saveRoutine, child: Text(l10n.saveButton)),
+        FilledButton(
+          onPressed: _isLoading ? null : _saveRoutine,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.saveButton),
+        ),
       ],
     );
   }
 
-  void _saveRoutine() {
+  bool _isLoading = false;
+
+  void _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+
       final routine = widget.routine ?? Routine()
         ..status = RoutineStatus.pending
         ..history = [];
 
       routine
         ..title = _titleController.text
-        ..description = _descriptionController.text
         ..startDate = _startDate
         ..time = _time
         ..recurrence = _recurrence
-        ..cardStyle = _cardStyle;
+        ..cardStyle = _cardStyle
+        ..imageAlignmentY = _imageAlignmentY
+        ..fontSize = _fontSize;
 
-      Navigator.pop(context, routine);
+      // Small delay to prevent UI glitches and ensure state update
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        Navigator.pop(context, routine);
+      }
     }
   }
 

@@ -41,6 +41,12 @@ class Routine extends HiveObject {
 
   @HiveField(11)
   String? cardStyle;
+
+  @HiveField(12)
+  double? imageAlignmentY; // -1.0 (top) to 1.0 (bottom)
+
+  @HiveField(13)
+  double? fontSize;
 }
 
 @HiveType(typeId: 1)

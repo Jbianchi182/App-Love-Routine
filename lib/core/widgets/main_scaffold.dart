@@ -13,19 +13,21 @@ class MainScaffold extends ConsumerWidget {
 
   static const Map<String, int> branchIndexMap = {
     'home': 0,
-    'calendar': 1,
-    'finance': 2,
-    'health': 3,
-    'education': 4,
-    'diet': 5,
-    'shopping': 6,
-    'categories': 7,
-    'settings': 8,
+    'finance':
+        1, // Shifted indices? No, StatefulShellRoute branches are indexed by order in the list.
+    // If I removed branch 1 (calendar), then finance is now 1.
+    // I need to update ALL indices.
+    'health': 2,
+    'education': 3,
+    'diet': 4,
+    'shopping': 5,
+    'categories': 6,
+    'settings': 7,
   };
 
   static const Map<String, IconData> iconMap = {
     'home': Icons.home_outlined,
-    'calendar': Icons.calendar_month_outlined,
+    //    'calendar': Icons.calendar_month_outlined, // Removed
     'finance': Icons.attach_money,
     'health': Icons.favorite_border,
     'education': Icons.school_outlined,
@@ -37,7 +39,7 @@ class MainScaffold extends ConsumerWidget {
 
   static const Map<String, IconData> selectedIconMap = {
     'home': Icons.home,
-    'calendar': Icons.calendar_month,
+    //    'calendar': Icons.calendar_month, // Removed
     'finance': Icons.attach_money, // Filled version if available
     'health': Icons.favorite,
     'education': Icons.school,
@@ -54,17 +56,24 @@ class MainScaffold extends ConsumerWidget {
     final prefs = prefsAsync.asData?.value ?? HomePreferences();
 
     // Default pinned modules if empty or error
-    final pinned = prefs.pinnedModules.isNotEmpty
+    final rawPinned = prefs.pinnedModules.isNotEmpty
         ? prefs.pinnedModules
-        : ['calendar', 'finance', 'health'];
+        : ['finance', 'health', 'education'];
+
+    // Force remove 'calendar' if it exists in saved preferences
+    final pinned = rawPinned.where((m) => m != 'calendar').toList();
 
     // Ensure we have exactly 3 pinned items, pad with defaults if needed
     final safePinned = List<String>.from(pinned);
     while (safePinned.length < 3) {
-      if (!safePinned.contains('calendar'))
-        safePinned.add('calendar');
-      else if (!safePinned.contains('finance'))
+      if (!safePinned.contains('finance'))
         safePinned.add('finance');
+      else if (!safePinned.contains('health'))
+        safePinned.add('health');
+      else if (!safePinned.contains('education'))
+        safePinned.add('education');
+      else if (!safePinned.contains('diet'))
+        safePinned.add('diet');
       else if (!safePinned.contains('health'))
         safePinned.add('health');
       else

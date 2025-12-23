@@ -31,8 +31,9 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     // Date Formatting
+    final locale = Localizations.localeOf(context).toString();
     final now = DateTime.now();
-    final dateString = DateFormat("EEE, d 'de' MMMM", 'pt_BR').format(now);
+    final dateString = DateFormat("EEE, d 'de' MMMM", locale).format(now);
     // Capitalize first letter
     final formattedDate = dateString.replaceFirst(
       dateString[0],
@@ -92,6 +93,27 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _showRoutineDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    Routine? routine,
+  }) async {
+    final homeState = ref.read(homeProvider);
+    final result = await showDialog<Routine>(
+      context: context,
+      builder: (context) =>
+          RoutineDialog(routine: routine, initialDate: homeState.selectedDate),
+    );
+
+    if (result != null) {
+      if (routine == null) {
+        await ref.read(routineProvider.notifier).addRoutine(result);
+      } else {
+        await ref.read(routineProvider.notifier).updateRoutine(result);
+      }
+    }
+  }
+
   Widget _buildResponsiveBody(
     BuildContext context,
     WidgetRef ref,
@@ -119,9 +141,24 @@ class HomeScreen extends ConsumerWidget {
               );
             }
             if (section == 'calendar') {
-              return const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: HomeCalendarWidget(),
+              return Column(
+                children: [
+                  HomeCalendarWidget(
+                    onDaySelected: (day) {
+                      // Logic: If day has no events, prompt to create new routine.
+                      // Or simply allow tapping a "create" button which we don't have.
+                      // The user requested: "possible to click on the calendar itself"
+                      // Replicating CalendarPage logic: if events empty -> show dialog
+                      final logic = ref.read(calendarLogicProvider);
+                      final events = logic.getEventsForDay(day);
+                      if (events.isEmpty) {
+                        _showRoutineDialog(context, ref, routine: null);
+                      }
+                    },
+                  ),
+                  _buildDayEventsList(context, ref, homeState.selectedDate),
+                  const SizedBox(height: 16),
+                ],
               );
             }
             return Container();
@@ -181,7 +218,7 @@ class HomeScreen extends ConsumerWidget {
           title: event.title,
           time: DateFormat(
             "EEE, dd 'de' MMMM • HH:mm",
-            'pt_BR',
+            Localizations.localeOf(context).toString(),
           ).format(event.time),
           backgroundImagePath: event.cardStyle != null
               ? CardStyles.getAsset(event.cardStyle)
@@ -198,18 +235,118 @@ class HomeScreen extends ConsumerWidget {
                   .updateStatus(routine, newStatus);
             }
           },
-          onTap: () async {
+          onTap: () {
             if (event.originalObject is Routine) {
               final routine = event.originalObject as Routine;
-              await showDialog(
-                context: context,
-                builder: (context) => RoutineDialog(routine: routine),
-              );
-              // Refresh happens via provider watch
+              _showRoutineDialog(context, ref, routine: routine);
             }
           },
         );
       },
+    );
+  }
+
+  Widget _buildDayEventsList(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime selectedDate,
+  ) {
+    final logic = ref.read(calendarLogicProvider);
+    final dayEvents = logic.getEventsForDay(selectedDate);
+    final theme = Theme.of(context);
+
+    if (dayEvents.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16.0),
+        child: Text(
+          'Nada agendado para este dia.',
+          style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: dayEvents.length,
+      itemBuilder: (context, index) {
+        final event = dayEvents[index];
+        return _buildEventCard(context, ref, event, theme);
+      },
+    );
+  }
+
+  Widget _buildEventCard(
+    BuildContext context,
+    WidgetRef ref,
+    CalendarEvent event,
+    ThemeData theme,
+  ) {
+    IconData icon;
+    Color color;
+
+    switch (event.type) {
+      case CalendarEventType.routine:
+        icon = Icons.event_available;
+        color = theme.colorScheme.primary;
+        break;
+      case CalendarEventType.diet:
+        icon = Icons.restaurant;
+        color = Colors.green;
+        break;
+      case CalendarEventType.medication:
+        icon = Icons.medication;
+        color = Colors.redAccent;
+        break;
+      case CalendarEventType.appointment:
+        icon = Icons.medical_services;
+        color = Colors.blue;
+        break;
+    }
+
+    if (event.type == CalendarEventType.routine &&
+        event.originalObject is Routine) {
+      final routine = event.originalObject as Routine;
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: CustomTaskCard(
+          title: routine.title,
+          time: DateFormat('HH:mm').format(routine.time),
+          backgroundImagePath: routine.cardStyle != null
+              ? CardStyles.getAsset(routine.cardStyle)
+              : null,
+          imageAlignmentY: routine.imageAlignmentY,
+          fontSize: routine.fontSize,
+          isCompleted: routine.status == RoutineStatus.completedOnTime,
+          onCheckboxChanged: (val) {
+            final newStatus = val == true
+                ? RoutineStatus.completedOnTime
+                : RoutineStatus.pending;
+            ref.read(routineProvider.notifier).updateStatus(routine, newStatus);
+          },
+          onTap: () => _showRoutineDialog(context, ref, routine: routine),
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.white,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color.withOpacity(0.1),
+          child: Icon(icon, color: color),
+        ),
+        title: Text(
+          event.title,
+          style: TextStyle(
+            decoration: event.isCompleted ? TextDecoration.lineThrough : null,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        subtitle: Text(DateFormat('HH:mm').format(event.time)),
+      ),
     );
   }
 }

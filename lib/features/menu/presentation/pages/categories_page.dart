@@ -58,12 +58,25 @@ class CategoriesPage extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.menuTitle), // Localized Title
         actions: [
-          IconButton(
-            icon: Icon(isGrid ? Icons.view_list : Icons.grid_view),
-            onPressed: () {
-              ref.read(homePreferencesProvider.notifier).toggleMenuView();
-            },
-            tooltip: isGrid ? 'Lista' : 'Grade', // TODO: Localize if needed
+          // View Toggle Buttons
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: ToggleButtons(
+              constraints: const BoxConstraints(minHeight: 32, minWidth: 48),
+              borderRadius: BorderRadius.circular(8),
+              isSelected: [isGrid, !isGrid],
+              onPressed: (index) {
+                // If index 0 (Grid) is pressed and !isGrid, toggle.
+                // If index 1 (List) is pressed and isGrid, toggle.
+                if ((index == 0 && !isGrid) || (index == 1 && isGrid)) {
+                  ref.read(homePreferencesProvider.notifier).toggleMenuView();
+                }
+              },
+              children: const [
+                Icon(Icons.grid_view, size: 20),
+                Icon(Icons.view_list, size: 20),
+              ],
+            ),
           ),
         ],
       ),
