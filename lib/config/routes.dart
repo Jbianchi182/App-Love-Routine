@@ -10,6 +10,7 @@ import 'package:love_routine_app/features/finance/presentation/pages/finance_pag
 import 'package:love_routine_app/features/diets/presentation/pages/diet_page.dart';
 import 'package:love_routine_app/features/shopping/presentation/pages/shopping_list_page.dart';
 import 'package:love_routine_app/features/shopping/presentation/pages/shopping_history_page.dart';
+import 'package:love_routine_app/features/calendar/presentation/pages/routine_history_page.dart';
 import 'package:love_routine_app/features/menu/presentation/pages/categories_page.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -38,6 +39,10 @@ final router = GoRouter(
           navigatorKey: _homeNavigatorKey,
           routes: [
             GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
+            GoRoute(
+              path: '/routine/history',
+              builder: (context, state) => const RoutineHistoryPage(),
+            ),
           ],
         ),
 

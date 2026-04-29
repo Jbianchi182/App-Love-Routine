@@ -211,7 +211,6 @@ class SettingsPage extends ConsumerWidget {
       data: (prefs) {
         // Full list of available modules to sort
         const allModules = [
-          'calendar',
           'finance',
           'health',
           'education',
@@ -289,8 +288,6 @@ class SettingsPage extends ConsumerWidget {
 
   String _getModuleName(String module) {
     switch (module) {
-      case 'calendar':
-        return 'Calendário';
       case 'finance':
         return 'Finanças';
       case 'health':
@@ -310,8 +307,6 @@ class SettingsPage extends ConsumerWidget {
     switch (section) {
       case 'finance':
         return 'Resumo Financeiro';
-      case 'calendar':
-        return 'Calendário Mês';
       case 'upcoming':
         return 'Próximos Eventos';
       default:

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:love_routine_app/features/home/presentation/providers/home_provider.dart';
 import 'package:love_routine_app/features/home/presentation/widgets/custom_task_card.dart';
 import 'package:love_routine_app/features/home/presentation/providers/home_preferences_provider.dart';
+import 'package:love_routine_app/features/calendar/presentation/providers/routine_history_provider.dart';
 import 'package:love_routine_app/features/home/domain/models/home_preferences.dart';
 import 'package:love_routine_app/l10n/generated/app_localizations.dart';
 import 'package:love_routine_app/features/home/presentation/widgets/financial_summary_widget.dart';
@@ -207,7 +208,17 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildGroupedEvents(context, ref, futureEvents, now),
+          children: [
+            ..._buildGroupedEvents(context, ref, futureEvents, now),
+            const SizedBox(height: 12),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => context.push('/routine/history'),
+                icon: const Icon(Icons.history, size: 18),
+                label: const Text('Ver Histórico de Tarefas'),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -261,19 +272,29 @@ class HomeScreen extends ConsumerWidget {
           widgets.add(
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6.0),
-              child: CustomTaskCard(
-                title: routine.title,
-                time: DateFormat('HH:mm').format(routine.time),
-                backgroundImagePath: CardStyles.getAsset(routine.cardStyle),
-                imageAlignmentY: routine.imageAlignmentY,
-                fontSize: routine.fontSize,
-                isCompleted: routine.status == RoutineStatus.completedOnTime,
-                onCheckboxChanged: (val) {
-                  final newStatus = val == true
-                      ? RoutineStatus.completedOnTime
-                      : RoutineStatus.pending;
-                  ref.read(routineProvider.notifier).updateStatus(routine, newStatus);
-                },
+            child: Consumer(
+              builder: (context, ref, _) {
+                final history = ref.watch(routineHistoryProvider).asData?.value ?? [];
+                final today = DateTime(now.year, now.month, now.day);
+                final isTodayCompleted = history.any((c) => 
+                  c.date.isAtSameMomentAs(today) && 
+                  c.routineId == routine.key.toString() && 
+                  c.isCompleted);
+
+                return CustomTaskCard(
+                  title: routine.title,
+                  time: DateFormat('HH:mm').format(routine.time),
+                  backgroundImagePath: CardStyles.getAsset(routine.cardStyle),
+                  imageAlignmentY: routine.imageAlignmentY,
+                  fontSize: routine.fontSize,
+                  isCompleted: isTodayCompleted,
+                  onCheckboxChanged: (val) {
+                    final newStatus = val == true
+                        ? RoutineStatus.completedOnTime
+                        : RoutineStatus.pending;
+                    ref.read(routineProvider.notifier).updateStatus(routine.key, newStatus);
+                    ref.read(routineHistoryProvider.notifier).logTodayCompletion(routine, val == true);
+                  },
                 onTap: () {
                   _showRoutineDialog(context, ref, routine: routine);
                 },
@@ -299,8 +320,10 @@ class HomeScreen extends ConsumerWidget {
                     await ref.read(routineProvider.notifier).deleteRoutine(routine);
                   }
                 },
-              ),
+                );
+              },
             ),
+          ),
           );
         } else {
           // Other event types (diet, medication, etc.) still use the simple row for now
@@ -416,22 +439,34 @@ class HomeScreen extends ConsumerWidget {
       final routine = event.originalObject as Routine;
       return Padding(
         padding: const EdgeInsets.only(bottom: 8.0),
-        child: CustomTaskCard(
-          title: routine.title,
-          time: DateFormat('HH:mm').format(routine.time),
-          backgroundImagePath: routine.cardStyle != null
-              ? CardStyles.getAsset(routine.cardStyle)
-              : null,
-          imageAlignmentY: routine.imageAlignmentY,
-          fontSize: routine.fontSize,
-          isCompleted: routine.status == RoutineStatus.completedOnTime,
-          onCheckboxChanged: (val) {
-            final newStatus = val == true
-                ? RoutineStatus.completedOnTime
-                : RoutineStatus.pending;
-            ref.read(routineProvider.notifier).updateStatus(routine, newStatus);
+        child: Consumer(
+          builder: (context, ref, _) {
+            final history = ref.watch(routineHistoryProvider).asData?.value ?? [];
+            final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+            final isTodayCompleted = history.any((c) => 
+              c.date.isAtSameMomentAs(today) && 
+              c.routineId == routine.key.toString() && 
+              c.isCompleted);
+
+            return CustomTaskCard(
+              title: routine.title,
+              time: DateFormat('HH:mm').format(routine.time),
+              backgroundImagePath: routine.cardStyle != null
+                  ? CardStyles.getAsset(routine.cardStyle)
+                  : null,
+              imageAlignmentY: routine.imageAlignmentY,
+              fontSize: routine.fontSize,
+              isCompleted: isTodayCompleted,
+              onCheckboxChanged: (val) {
+                final newStatus = val == true
+                    ? RoutineStatus.completedOnTime
+                    : RoutineStatus.pending;
+                ref.read(routineProvider.notifier).updateStatus(routine.key, newStatus);
+                ref.read(routineHistoryProvider.notifier).logTodayCompletion(routine, val == true);
+              },
+              onTap: () => _showRoutineDialog(context, ref, routine: routine),
+            );
           },
-          onTap: () => _showRoutineDialog(context, ref, routine: routine),
         ),
       );
     }
