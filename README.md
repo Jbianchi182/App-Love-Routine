@@ -1,16 +1,47 @@
-# love_routine_app
+# Love Routine App ❤️
 
-A new Flutter project.
+O **Love Routine** é um assistente pessoal completo desenvolvido em Flutter, projetado para ajudar na organização da rotina diária, gestão acadêmica, controle financeiro e bem-estar.
 
-## Getting Started
+## 🚀 Funcionalidades Principais
 
-This project is a starting point for a Flutter application.
+### 🏠 Início & Rotinas
+*   **Gestão de Tarefas Dinâmica:** Visualize seus compromissos do dia com cards personalizados.
+*   **Estilização de Cards:** Opções de cards com imagens ou modo minimalista ("sem foto").
+*   **Edição Rápida:** Gerencie e exclua rotinas diretamente da tela inicial através do calendário integrado.
 
-A few resources to get you started if this is your first Flutter project:
+### 📚 Educação (Gestão Acadêmica)
+*   **Organização por Cursos:** Cadastre seus cursos e instituições.
+*   **Matérias & Notas:** Controle de notas com calculadora de médias integrada.
+*   **Anotações Acadêmicas:** Espaço dedicado para notas e lembretes por matéria.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### 💰 Finanças & Pagamentos
+*   **Controle de Transações:** Registro de receitas e despesas com categorias e filtros.
+*   **Gestão de Cartões:** Cadastre seus cartões de crédito e débito (bandeira, tipo e últimos 4 dígitos) para facilitar o acompanhamento de gastos.
+*   **Resumo Financeiro:** Visualize seu saldo e fluxo de caixa de forma clara.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🛒 Mercado (Lista de Compras Inteligente)
+*   **Lista Dinâmica:** Adicione itens, quantidades e preços.
+*   **Finalização Integrada:** Ao finalizar uma compra, o app pergunta o mercado e a forma de pagamento.
+*   **Integração Financeira:** As compras finalizadas geram automaticamente uma despesa na aba de Finanças.
+*   **Histórico de Compras:** Veja o que comprou, quanto pagou e qual cartão utilizou em cada visita ao mercado.
+
+### 🍎 Saúde & Dieta
+*   **Controle de Medicamentos:** Agende horários para seus remédios.
+*   **Consultas Médicas:** Histórico e agendamento de consultas.
+*   **Plano Alimentar:** Gestão de refeições e rastreador de jejum intermitente.
+
+## 🛠️ Stack Técnica
+*   **Framework:** Flutter
+*   **Gerenciamento de Estado:** Riverpod (AsyncNotifier, StreamProvider)
+*   **Banco de Dados Local:** Hive (Persistência NoSQL rápida)
+*   **Navegação:** GoRouter (Navegação baseada em rotas com ShellRoute)
+*   **Localização:** l10n (Suporte a múltiplos idiomas)
+
+## 🎨 Design
+O app utiliza um design moderno e limpo, com foco na usabilidade:
+*   **Standard AppBar:** Consistência visual em todas as telas internas.
+*   **Ações Rápidas:** Uso de Floating Action Buttons estendidos para melhor acessibilidade.
+*   **Modo Escuro/Claro:** Suporte completo a temas personalizados.
+
+---
+Desenvolvido com foco em organização e produtividade pessoal.
