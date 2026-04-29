@@ -31,7 +31,7 @@ class HomeCalendarWidget extends ConsumerWidget {
     // No need to fetch routines list here, eventLoader handles it.
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.zero,
       elevation: 2,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 8.0),

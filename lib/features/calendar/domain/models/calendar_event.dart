@@ -1,4 +1,4 @@
-enum CalendarEventType { routine, diet, medication, appointment }
+enum CalendarEventType { routine, diet, medication, appointment, fasting }
 
 class CalendarEvent {
   final String id;

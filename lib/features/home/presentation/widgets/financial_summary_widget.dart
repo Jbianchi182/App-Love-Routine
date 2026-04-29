@@ -20,7 +20,7 @@ class FinancialSummaryWidget extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: EdgeInsets.zero,
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: InkWell(

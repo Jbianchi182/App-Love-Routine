@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
 import 'package:love_routine_app/features/diets/domain/enums/diet_tag.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
+import 'package:love_routine_app/features/diets/presentation/providers/fasting_provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class DietDialog extends ConsumerStatefulWidget {
@@ -112,8 +113,10 @@ class _DietDialogState extends ConsumerState<DietDialog> {
       title: Text(
         widget.meal == null ? 'Novo Plano Alimentar' : 'Editar Plano',
       ),
-      content: SingleChildScrollView(
-        child: Form(
+      content: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -332,6 +335,7 @@ class _DietDialogState extends ConsumerState<DietDialog> {
             ],
           ),
         ),
+        ),
       ),
       actions: [
         TextButton(
@@ -343,7 +347,7 @@ class _DietDialogState extends ConsumerState<DietDialog> {
     );
   }
 
-  void _saveMeal() {
+  Future<void> _saveMeal() async {
     if (_formKey.currentState!.validate()) {
       if (_foods.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -370,6 +374,44 @@ class _DietDialogState extends ConsumerState<DietDialog> {
         return;
       }
 
+      // Fasting validation
+      final fastingAsync = ref.read(fastingProvider);
+      if (fastingAsync.hasValue) {
+        final activeRoutine = fastingAsync.value!.cast<dynamic>().firstWhere(
+              (r) => r.isActive == true,
+              orElse: () => null,
+            );
+
+        if (activeRoutine != null) {
+          final isFastingTime = _checkIfFastingTime(activeRoutine, _time);
+          if (isFastingTime) {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('⚠️ Horário de Jejum'),
+                content: const Text(
+                  'O horário desta refeição está dentro do seu período de jejum programado.\n\nDeseja criar a refeição mesmo assim?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('Sim, continuar'),
+                  ),
+                ],
+              ),
+            );
+
+            if (confirm != true) {
+              return; // User aborted
+            }
+          }
+        }
+      }
+
       final meal = widget.meal ?? DietMeal();
       meal
         ..name = _nameController.text
@@ -386,6 +428,35 @@ class _DietDialogState extends ConsumerState<DietDialog> {
             : null;
 
       Navigator.pop(context, meal);
+    }
+  }
+
+  bool _checkIfFastingTime(dynamic activeRoutine, DateTime mealTime) {
+    // Determine if the `mealTime` hour/minute falls within the fasting period
+    // Simple time check assuming daily fast for now to warn the user
+    // e.g. Fasting from 18:00 to 10:00. Meal is 20:00 -> within.
+    
+    final startHour = activeRoutine.startTime.hour;
+    final startMinute = activeRoutine.startTime.minute;
+    final fastDuration = activeRoutine.fastingHours;
+
+    final mealH = mealTime.hour;
+    final mealM = mealTime.minute;
+
+    // Convert everything to minutes from 00:00 for easy comparison
+    final startMins = startHour * 60 + startMinute;
+    final durationMins = fastDuration * 60;
+    var endMins = startMins + durationMins;
+
+    final targetMins = mealH * 60 + mealM;
+
+    if (endMins <= 24 * 60) {
+      // Doesn't cross midnight
+      return targetMins >= startMins && targetMins < endMins;
+    } else {
+      // Crosses midnight
+      endMins = endMins % (24 * 60);
+      return targetMins >= startMins || targetMins < endMins;
     }
   }
 }

@@ -5,6 +5,7 @@ import 'package:love_routine_app/features/diets/presentation/providers/diet_prov
 import 'package:love_routine_app/features/health/presentation/providers/health_provider.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/calendar_logic_provider.dart';
 import 'package:love_routine_app/features/calendar/domain/models/calendar_event.dart';
+import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
 import 'package:intl/intl.dart';
 
 class UpcomingEventsListWidget extends ConsumerWidget {
@@ -122,6 +123,8 @@ class UpcomingEventsListWidget extends ConsumerWidget {
         return Colors.redAccent;
       case CalendarEventType.appointment:
         return Colors.blue;
+      case CalendarEventType.fasting:
+        return Colors.purple;
     }
   }
 
@@ -135,6 +138,8 @@ class UpcomingEventsListWidget extends ConsumerWidget {
         return Icons.medication;
       case CalendarEventType.appointment:
         return Icons.medical_services;
+      case CalendarEventType.fasting:
+        return Icons.timer;
     }
   }
 }

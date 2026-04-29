@@ -12,6 +12,8 @@ import 'package:love_routine_app/features/home/presentation/widgets/home_calenda
 import 'package:love_routine_app/features/calendar/domain/models/calendar_event.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/routine_provider.dart';
 import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
+import 'package:love_routine_app/features/diets/presentation/providers/fasting_provider.dart';
+import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
 import 'package:love_routine_app/features/health/presentation/providers/health_provider.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/calendar_logic_provider.dart';
 import 'package:love_routine_app/config/card_styles.dart';
@@ -145,10 +147,6 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   HomeCalendarWidget(
                     onDaySelected: (day) {
-                      // Logic: If day has no events, prompt to create new routine.
-                      // Or simply allow tapping a "create" button which we don't have.
-                      // The user requested: "possible to click on the calendar itself"
-                      // Replicating CalendarPage logic: if events empty -> show dialog
                       final logic = ref.read(calendarLogicProvider);
                       final events = logic.getEventsForDay(day);
                       if (events.isEmpty) {
@@ -156,7 +154,6 @@ class HomeScreen extends ConsumerWidget {
                       }
                     },
                   ),
-                  _buildDayEventsList(context, ref, homeState.selectedDate),
                   const SizedBox(height: 16),
                 ],
               );
@@ -171,30 +168,25 @@ class HomeScreen extends ConsumerWidget {
   Widget _buildUpcomingSection(BuildContext context, WidgetRef ref) {
     ref.watch(routineProvider);
     ref.watch(dietProvider);
+    ref.watch(fastingProvider);
     ref.watch(medicationProvider);
     ref.watch(appointmentProvider);
 
     final logic = ref.read(calendarLogicProvider);
+    final selectedDate = ref.read(homeProvider).selectedDate;
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final daysToShow =
         ref.read(homePreferencesProvider).asData?.value.upcomingDaysRange ?? 7;
 
     final List<CalendarEvent> allEvents = [];
     for (int i = 0; i < daysToShow; i++) {
-      final date = now.add(Duration(days: i));
+      final date = selectedDate.add(Duration(days: i));
       final events = logic.getEventsForDay(date);
       allEvents.addAll(events);
     }
 
-    final futureEvents = allEvents.where((e) {
-      if (e.isCompleted) return false;
-      if (e.time.year == now.year &&
-          e.time.month == now.month &&
-          e.time.day == now.day) {
-        return e.time.isAfter(now.subtract(const Duration(minutes: 15)));
-      }
-      return e.time.isAfter(now);
-    }).toList();
+    final futureEvents = allEvents; // Show all events for the selected days
 
     futureEvents.sort((a, b) => a.time.compareTo(b.time));
 
@@ -207,43 +199,104 @@ class HomeScreen extends ConsumerWidget {
       );
     }
 
-    return ListView.separated(
-      physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
-      itemCount: futureEvents.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final event = futureEvents[index];
-        return CustomTaskCard(
-          title: event.title,
-          time: DateFormat(
-            "EEE, dd 'de' MMMM • HH:mm",
-            Localizations.localeOf(context).toString(),
-          ).format(event.time),
-          backgroundImagePath: event.cardStyle != null
-              ? CardStyles.getAsset(event.cardStyle)
-              : null,
-          isCompleted: event.isCompleted,
-          onCheckboxChanged: (val) {
-            if (event.originalObject is Routine) {
-              final routine = event.originalObject as Routine;
-              final newStatus = val == true
-                  ? RoutineStatus.completedOnTime
-                  : RoutineStatus.pending;
-              ref
-                  .read(routineProvider.notifier)
-                  .updateStatus(routine, newStatus);
-            }
-          },
-          onTap: () {
-            if (event.originalObject is Routine) {
-              final routine = event.originalObject as Routine;
-              _showRoutineDialog(context, ref, routine: routine);
-            }
-          },
-        );
-      },
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: _buildGroupedEvents(context, futureEvents, now),
+        ),
+      ),
     );
+  }
+
+  List<Widget> _buildGroupedEvents(BuildContext context, List<CalendarEvent> futureEvents, DateTime now) {
+    final Map<DateTime, List<CalendarEvent>> groupedEvents = {};
+    for (var event in futureEvents) {
+      final date = DateTime(event.time.year, event.time.month, event.time.day);
+      if (!groupedEvents.containsKey(date)) {
+        groupedEvents[date] = [];
+      }
+      groupedEvents[date]!.add(event);
+    }
+
+    final theme = Theme.of(context);
+    final List<Widget> widgets = [];
+
+    final entries = groupedEvents.entries.toList();
+    for (int i = 0; i < entries.length; i++) {
+      final date = entries[i].key;
+      final events = entries[i].value;
+
+      final today = DateTime(now.year, now.month, now.day);
+      String dateLabel;
+      if (date == today) {
+        dateLabel = 'Hoje:';
+      } else if (date == today.add(const Duration(days: 1))) {
+        dateLabel = 'Amanhã:';
+      } else {
+        dateLabel = DateFormat("EEEE, d/M", Localizations.localeOf(context).toString()).format(date);
+        dateLabel = '${dateLabel.replaceFirst(dateLabel[0], dateLabel[0].toUpperCase())}:';
+      }
+
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+          child: Text(
+            dateLabel,
+            style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+          ),
+        ),
+      );
+
+      for (var event in events) {
+        widgets.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    DateFormat('HH:mm').format(event.time),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    event.title,
+                    style: TextStyle(
+                      decoration: event.isCompleted ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (i < entries.length - 1) {
+        widgets.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 8.0),
+            child: Divider(height: 1),
+          ),
+        );
+      }
+    }
+
+    return widgets;
   }
 
   Widget _buildDayEventsList(
@@ -301,6 +354,10 @@ class HomeScreen extends ConsumerWidget {
       case CalendarEventType.appointment:
         icon = Icons.medical_services;
         color = Colors.blue;
+        break;
+      case CalendarEventType.fasting:
+        icon = Icons.timer;
+        color = Colors.purple;
         break;
     }
 

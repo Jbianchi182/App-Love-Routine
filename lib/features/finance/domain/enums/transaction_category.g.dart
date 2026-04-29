@@ -31,6 +31,12 @@ class TransactionCategoryAdapter extends TypeAdapter<TransactionCategory> {
         return TransactionCategory.housing;
       case 8:
         return TransactionCategory.bills;
+      case 9:
+        return TransactionCategory.thirteenthSalary;
+      case 10:
+        return TransactionCategory.mealVoucher;
+      case 11:
+        return TransactionCategory.foodVoucher;
       default:
         return TransactionCategory.salary;
     }
@@ -65,6 +71,15 @@ class TransactionCategoryAdapter extends TypeAdapter<TransactionCategory> {
         break;
       case TransactionCategory.bills:
         writer.writeByte(8);
+        break;
+      case TransactionCategory.thirteenthSalary:
+        writer.writeByte(9);
+        break;
+      case TransactionCategory.mealVoucher:
+        writer.writeByte(10);
+        break;
+      case TransactionCategory.foodVoucher:
+        writer.writeByte(11);
         break;
     }
   }

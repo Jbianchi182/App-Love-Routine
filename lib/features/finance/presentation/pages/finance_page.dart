@@ -4,6 +4,7 @@ import 'package:love_routine_app/features/finance/domain/models/finance_transact
 import 'package:love_routine_app/features/finance/presentation/providers/finance_provider.dart';
 import 'package:love_routine_app/features/finance/presentation/widgets/add_transaction_dialog.dart';
 import 'package:love_routine_app/features/finance/presentation/widgets/financial_summary_widget.dart';
+import 'package:love_routine_app/features/finance/presentation/providers/finance_filter_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:love_routine_app/features/finance/domain/enums/transaction_type.dart';
 
@@ -13,6 +14,9 @@ class FinancePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(financeProvider);
+    final filteredTransactions = ref.watch(filteredTransactionsProvider);
+    final availableFilters = ref.watch(availableFinanceFiltersProvider);
+    final currentFilter = ref.watch(financeFilterProvider);
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -22,10 +26,10 @@ class FinancePage extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       body: transactionsAsync.when(
-        data: (transactions) {
+        data: (_) {
           double totalIncome = 0;
           double totalExpense = 0;
-          for (var t in transactions) {
+          for (var t in filteredTransactions) {
             if (t.type == TransactionType.income) totalIncome += t.amount;
             if (t.type == TransactionType.expense) totalExpense += t.amount;
           }
@@ -33,6 +37,40 @@ class FinancePage extends ConsumerWidget {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              SizedBox(
+                height: 40,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: availableFilters.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 8),
+                  itemBuilder: (context, index) {
+                    final filter = availableFilters[index];
+                    final isSelected = filter == currentFilter;
+                    return ChoiceChip(
+                      label: Text(filter),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected) {
+                          ref.read(financeFilterProvider.notifier).state = filter;
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'Todas', label: Text('Todas')),
+                  ButtonSegment(value: 'Receitas', label: Text('Receitas')),
+                  ButtonSegment(value: 'Despesas', label: Text('Despesas')),
+                ],
+                selected: {ref.watch(financeTypeFilterProvider)},
+                onSelectionChanged: (set) {
+                  ref.read(financeTypeFilterProvider.notifier).state = set.first;
+                },
+              ),
+              const SizedBox(height: 16),
               FinancialSummaryWidget(
                 income: totalIncome,
                 expense: totalExpense,
@@ -40,13 +78,13 @@ class FinancePage extends ConsumerWidget {
               const SizedBox(height: 24),
               Text('Transações Recentes', style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
-              if (transactions.isEmpty)
+              if (filteredTransactions.isEmpty)
                 const Padding(
                   padding: EdgeInsets.all(32.0),
                   child: Center(child: Text('Nenhuma transação registrada.')),
                 )
               else
-                ...transactions.map(
+                ...filteredTransactions.map(
                   (t) => _buildTransactionItem(context, ref, t),
                 ),
             ],

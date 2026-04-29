@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
 import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
+import 'package:love_routine_app/features/diets/presentation/providers/fasting_provider.dart';
+import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
 import 'package:love_routine_app/features/diets/presentation/widgets/diet_dialog.dart';
+import 'package:love_routine_app/features/diets/presentation/widgets/fasting_dialog.dart';
 import 'package:love_routine_app/features/diets/presentation/widgets/fasting_tracker_widget.dart';
 import 'package:love_routine_app/features/calendar/presentation/providers/routine_provider.dart';
 import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
@@ -19,44 +22,57 @@ class DietPage extends ConsumerWidget {
 
     return Scaffold(
       // AppBar removed for tab integration
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showDietDialog(context, ref),
-        label: const Text('Novo Plano'),
-        icon: const Icon(Icons.add),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'add_fasting',
+            onPressed: () => _showFastingDialog(context, ref),
+            label: const Text('+ Jejum'),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton.extended(
+            heroTag: 'add_diet',
+            onPressed: () => _showDietDialog(context, ref),
+            label: const Text('Novo Plano'),
+            icon: const Icon(Icons.add),
+          ),
+        ],
       ),
       body: dietsAsync.when(
         data: (diets) {
-          if (diets.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.restaurant_menu,
-                    size: 64,
-                    color: theme.colorScheme.secondary.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nenhum plano alimentar criado.',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Crie refeições personalizadas para organizar sua dieta.',
-                  ),
-                ],
-              ),
-            );
-          }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: diets.length + 1,
+            itemCount: diets.isEmpty ? 2 : diets.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return const FastingTrackerWidget();
+              }
+              if (diets.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 64),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.restaurant_menu,
+                        size: 64,
+                        color: theme.colorScheme.secondary.withOpacity(0.5),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Nenhum plano alimentar criado.',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Crie refeições personalizadas para organizar sua dieta.',
+                      ),
+                    ],
+                  ),
+                );
               }
               final meal = diets[index - 1];
               return Card(
@@ -173,6 +189,17 @@ class DietPage extends ConsumerWidget {
       } else {
         await ref.read(dietProvider.notifier).updateDietMeal(result);
       }
+    }
+  }
+
+  Future<void> _showFastingDialog(BuildContext context, WidgetRef ref) async {
+    final result = await showDialog<FastingRoutine>(
+      context: context,
+      builder: (context) => const FastingDialog(),
+    );
+
+    if (result != null) {
+      await ref.read(fastingProvider.notifier).addFastingRoutine(result);
     }
   }
 

@@ -70,18 +70,25 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 onSelectionChanged: (newSelection) {
                   setState(() {
                     _selectedType = newSelection.first;
+                    // Reset category if not available in new type
+                    final validCategories = _getValidCategories(_selectedType);
+                    if (!validCategories.contains(_selectedCategory)) {
+                      _selectedCategory = validCategories.first;
+                    }
                   });
                 },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Descrição'),
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Informe a descrição'
-                    : null,
+              DropdownButtonFormField<TransactionCategory>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(labelText: 'Categoria'),
+                items: _getValidCategories(_selectedType).map((cat) {
+                  return DropdownMenuItem(value: cat, child: Text(cat.label));
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _selectedCategory = value);
+                },
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _amountController,
                 decoration: const InputDecoration(labelText: 'Valor (R\$)'),
@@ -95,14 +102,16 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<TransactionCategory>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(labelText: 'Categoria'),
-                items: TransactionCategory.values.map((cat) {
-                  return DropdownMenuItem(value: cat, child: Text(cat.label));
-                }).toList(),
-                onChanged: (value) {
-                  if (value != null) setState(() => _selectedCategory = value);
+              TextFormField(
+                controller: _titleController,
+                decoration: InputDecoration(
+                  labelText: _isDescriptionOptional() ? 'Descrição (opcional)' : 'Descrição',
+                ),
+                validator: (value) {
+                  if (!_isDescriptionOptional() && (value == null || value.trim().isEmpty)) {
+                    return 'Informe a descrição';
+                  }
+                  return null;
                 },
               ),
               const SizedBox(height: 16),
@@ -129,15 +138,50 @@ class _AddTransactionDialogState extends State<AddTransactionDialog> {
 
   void _save() {
     if (_formKey.currentState!.validate()) {
+      String finalTitle = _titleController.text.trim();
+      if (finalTitle.isEmpty) {
+        finalTitle = _selectedCategory.label;
+      }
+
       final transaction = FinanceTransaction()
         ..id = widget.transaction?.id
-        ..title = _titleController.text
+        ..title = finalTitle
         ..amount = double.parse(_amountController.text)
         ..type = _selectedType
         ..category = _selectedCategory
         ..date = _selectedDate;
 
       Navigator.pop(context, transaction);
+    }
+  }
+
+  bool _isDescriptionOptional() {
+    if (_selectedType == TransactionType.income && _selectedCategory != TransactionCategory.others) {
+      return true;
+    }
+    return false;
+  }
+
+  List<TransactionCategory> _getValidCategories(TransactionType type) {
+    if (type == TransactionType.income) {
+      return [
+        TransactionCategory.salary,
+        TransactionCategory.thirteenthSalary,
+        TransactionCategory.mealVoucher,
+        TransactionCategory.foodVoucher,
+        TransactionCategory.others,
+      ];
+    } else {
+      return [
+        TransactionCategory.food,
+        TransactionCategory.transport,
+        TransactionCategory.health,
+        TransactionCategory.entertainment,
+        TransactionCategory.education,
+        TransactionCategory.housing,
+        TransactionCategory.bills,
+        TransactionCategory.others,
+      ];
     }
   }
 }

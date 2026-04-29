@@ -21,7 +21,13 @@ enum TransactionCategory {
   @HiveField(7)
   housing,
   @HiveField(8)
-  bills;
+  bills,
+  @HiveField(9)
+  thirteenthSalary,
+  @HiveField(10)
+  mealVoucher,
+  @HiveField(11)
+  foodVoucher;
 
   String get label {
     switch (this) {
@@ -43,6 +49,12 @@ enum TransactionCategory {
         return 'Moradia';
       case TransactionCategory.bills:
         return 'Contas';
+      case TransactionCategory.thirteenthSalary:
+        return 'Décimo Terceiro';
+      case TransactionCategory.mealVoucher:
+        return 'Vale Refeição (VR)';
+      case TransactionCategory.foodVoucher:
+        return 'Vale Alimentação (VA)';
     }
   }
 }

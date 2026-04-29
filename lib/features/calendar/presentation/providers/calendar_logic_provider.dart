@@ -5,6 +5,7 @@ import 'package:love_routine_app/features/diets/presentation/providers/diet_prov
 import 'package:love_routine_app/features/health/presentation/providers/health_provider.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart'; // Import for RoutineStatus
+import 'package:love_routine_app/features/diets/presentation/providers/fasting_provider.dart';
 import 'package:table_calendar/table_calendar.dart'; // For isSameDay
 
 // Better approach: A minimal service/provider that logic resides in
@@ -18,6 +19,7 @@ class CalendarLogic {
   List<CalendarEvent> getEventsForDay(DateTime day) {
     final routines = ref.read(routineProvider).asData?.value ?? [];
     final diets = ref.read(dietProvider).asData?.value ?? [];
+    final fastings = ref.read(fastingProvider).asData?.value ?? [];
     final medications = ref.read(medicationProvider).asData?.value ?? [];
     final appointments = ref.read(appointmentProvider).asData?.value ?? [];
 
@@ -103,6 +105,64 @@ class CalendarLogic {
             originalObject: meal,
           ),
         );
+      }
+    }
+
+    bool _isFastingDay(dynamic fast, DateTime d) {
+      if (isSameDay(fast.startDate, d)) return true;
+      if (fast.recurrence == RecurrenceType.daily) return true;
+      if (fast.recurrence == RecurrenceType.weekly && fast.startDate.weekday == d.weekday) return true;
+      if (fast.recurrence == RecurrenceType.custom && (fast.customDaysOfWeek?.contains(d.weekday) ?? false)) return true;
+      if (fast.recurrence == RecurrenceType.monthly && (fast.customDaysOfMonth?.contains(d.day) ?? false)) return true;
+      return false;
+    }
+
+    // Fasting
+    for (var fast in fastings) {
+      if (!fast.isActive) continue;
+
+      final yesterday = day.subtract(const Duration(days: 1));
+      if (_isFastingDay(fast, yesterday)) {
+        final startYesterday = DateTime(yesterday.year, yesterday.month, yesterday.day, fast.startTime.hour, fast.startTime.minute);
+        final endToday = startYesterday.add(Duration(hours: fast.fastingHours));
+        if (isSameDay(endToday, day)) {
+          dailyEvents.add(
+            CalendarEvent(
+              id: 'fast_end_${fast.key}',
+              title: 'Final do jejum',
+              time: endToday,
+              type: CalendarEventType.fasting,
+              originalObject: fast,
+            ),
+          );
+        }
+      }
+
+      if (_isFastingDay(fast, day)) {
+        final startToday = DateTime(day.year, day.month, day.day, fast.startTime.hour, fast.startTime.minute);
+        final endTomorrow = startToday.add(Duration(hours: fast.fastingHours));
+
+        dailyEvents.add(
+          CalendarEvent(
+            id: 'fast_start_${fast.key}',
+            title: 'Início do jejum',
+            time: startToday,
+            type: CalendarEventType.fasting,
+            originalObject: fast,
+          ),
+        );
+
+        if (isSameDay(endTomorrow, day)) {
+          dailyEvents.add(
+            CalendarEvent(
+              id: 'fast_end_sameday_${fast.key}',
+              title: 'Final do jejum',
+              time: endTomorrow,
+              type: CalendarEventType.fasting,
+              originalObject: fast,
+            ),
+          );
+        }
       }
     }
 

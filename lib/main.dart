@@ -23,6 +23,7 @@ import 'package:love_routine_app/features/home/domain/models/home_preferences.da
 import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_trip.dart';
 import 'package:love_routine_app/features/finance/domain/models/payment_method.dart';
+import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
 
 void main() async {
   try {
@@ -51,6 +52,7 @@ void main() async {
     Hive.registerAdapter(ShoppingItemAdapter());
     Hive.registerAdapter(ShoppingTripAdapter());
     Hive.registerAdapter(PaymentMethodAdapter());
+    Hive.registerAdapter(FastingRoutineAdapter());
 
     // Open Boxes
     await Hive.openBox<Routine>('routines');
@@ -65,6 +67,7 @@ void main() async {
     await Hive.openBox<ShoppingItem>('shopping_items');
     await Hive.openBox<ShoppingTrip>('shopping_history');
     await Hive.openBox<PaymentMethod>('payment_methods');
+    await Hive.openBox<FastingRoutine>('fasting_routines');
 
     runApp(const ProviderScope(child: LoveRoutineApp()));
   } catch (e, stack) {

@@ -1,76 +1,164 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
-import 'package:love_routine_app/features/diets/presentation/providers/diet_provider.dart';
+import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
+import 'package:love_routine_app/features/diets/presentation/providers/fasting_provider.dart';
+import 'package:love_routine_app/features/diets/presentation/widgets/fasting_dialog.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/recurrence_type.dart';
 
-class FastingTrackerWidget extends ConsumerWidget {
+class FastingTrackerWidget extends ConsumerStatefulWidget {
   const FastingTrackerWidget({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dietsAsync = ref.watch(dietProvider);
+  ConsumerState<FastingTrackerWidget> createState() => _FastingTrackerWidgetState();
+}
+
+class _FastingTrackerWidgetState extends ConsumerState<FastingTrackerWidget> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Update UI every minute
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fastingAsync = ref.watch(fastingProvider);
     final theme = Theme.of(context);
 
-    return dietsAsync.when(
-      data: (meals) {
-        if (meals.isEmpty) return const SizedBox.shrink();
+    return fastingAsync.when(
+      data: (routines) {
+        final activeRoutine = routines.cast<FastingRoutine?>().firstWhere(
+              (r) => r?.isActive == true,
+              orElse: () => null,
+            );
 
-        final fastingInfo = _calculateFasting(meals);
-        if (fastingInfo == null) {
-          return const SizedBox.shrink();
-        }
+        if (activeRoutine == null) return const SizedBox.shrink();
 
-        final hours = fastingInfo['hours'] as int;
-        final minutes = fastingInfo['minutes'] as int;
-        final lastMeal = fastingInfo['lastMeal'] as DietMeal;
-        final nextMeal = fastingInfo['nextMeal'] as DietMeal;
+        // Check if there's a fast scheduled for today or spanning into today
+        final fastingInfo = _calculateCurrentState(activeRoutine);
+        if (fastingInfo == null) return const SizedBox.shrink();
+
+        final isFasting = fastingInfo['isFasting'] as bool;
+        final start = fastingInfo['start'] as DateTime;
+        final end = fastingInfo['end'] as DateTime;
+        final now = DateTime.now();
+
+        final totalDuration = end.difference(start);
+        final elapsed = now.difference(start);
+        double progress = elapsed.inMinutes / totalDuration.inMinutes;
+        progress = progress.clamp(0.0, 1.0);
+
+        final remaining = end.difference(now);
+        final remainingHours = remaining.inHours;
+        final remainingMinutes = remaining.inMinutes % 60;
 
         return Card(
           elevation: 2,
           margin: const EdgeInsets.only(bottom: 16),
-          color: theme.colorScheme.primaryContainer,
+          color: isFasting 
+              ? theme.colorScheme.primaryContainer 
+              : Colors.green.withOpacity(0.1),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Icon(
-                      Icons.timer,
-                      color: theme.colorScheme.onPrimaryContainer,
+                    Row(
+                      children: [
+                        Icon(
+                          isFasting ? Icons.timer : Icons.restaurant,
+                          color: isFasting ? theme.colorScheme.onPrimaryContainer : Colors.green[800],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          activeRoutine.name,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            color: isFasting ? theme.colorScheme.onPrimaryContainer : Colors.green[800],
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Período de Jejum',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.bold,
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, size: 20),
+                          onPressed: () => _editFasting(context, ref, activeRoutine),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                          onPressed: () => _deleteFasting(context, ref, activeRoutine),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CircularProgressIndicator(
+                            value: progress,
+                            strokeWidth: 8,
+                            backgroundColor: Colors.white.withOpacity(0.5),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isFasting ? theme.colorScheme.primary : Colors.green,
+                            ),
+                          ),
+                          Center(
+                            child: Text(
+                              '${(progress * 100).toInt()}%',
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isFasting ? 'Tempo restante de Jejum' : 'Janela de Alimentação',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          Text(
+                            '$remainingHours h ${remainingMinutes} min',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: isFasting ? theme.colorScheme.onPrimaryContainer : Colors.green[800],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Até ${_formatTime(end)}',
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '$hours h ${minutes > 0 ? '$minutes min' : ''}',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'De: ${lastMeal.name} (${_formatTime(lastMeal.time)})',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
-                ),
-                Text(
-                  'Até: ${nextMeal.name} (${_formatTime(nextMeal.time)})',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onPrimaryContainer,
-                  ),
                 ),
               ],
             ),
@@ -86,115 +174,76 @@ class FastingTrackerWidget extends ConsumerWidget {
     return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
-  Map<String, dynamic>? _calculateFasting(List<DietMeal> meals) {
-    final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(days: 1));
-    final today = now;
-    final tomorrow = now.add(const Duration(days: 1));
+  Future<void> _editFasting(BuildContext context, WidgetRef ref, FastingRoutine routine) async {
+    final result = await showDialog<FastingRoutine>(
+      context: context,
+      builder: (context) => FastingDialog(routine: routine),
+    );
+    if (result != null) {
+      ref.read(fastingProvider.notifier).updateFastingRoutine(result);
+    }
+  }
 
-    // Get meals scheduled for Yesterday
-    // Note: This logic assumes 'meals' are templates that recur.
-    // We need to filter which templates happen on specific days.
-
-    // Last meal of yesterday (or today if currently late?)
-    // User requested: "entre a ultima refeição de um dia e a primeira refeição do dia seguinte"
-    // So typically: Last meal of Yesterday vs First meal of Today.
-
-    final yesterdayMeals = _getMealsForDay(meals, yesterday);
-    final todayMeals = _getMealsForDay(meals, today);
-    // If no meals today, maybe check tomorrow?
-    final tomorrowMeals = _getMealsForDay(meals, tomorrow);
-
-    if (yesterdayMeals.isEmpty)
-      return null; // Can't calc specific period without yesterday
-
-    // Sort
-    yesterdayMeals.sort((a, b) => _compareTime(a.time, b.time));
-    todayMeals.sort((a, b) => _compareTime(a.time, b.time));
-    tomorrowMeals.sort((a, b) => _compareTime(a.time, b.time));
-
-    final lastYesterday = yesterdayMeals.last;
-
-    // Find next meal relative to NOW or just First of Today?
-    // "Calculated fasting period" usually implies "Overnight Fast".
-    // So Last of Yesterday -> First of Today.
-
-    DietMeal? next;
-    DateTime? nextDateTime;
-    DateTime lastDateTime = DateTime(
-      yesterday.year,
-      yesterday.month,
-      yesterday.day,
-      lastYesterday.time.hour,
-      lastYesterday.time.minute,
+  Future<void> _deleteFasting(BuildContext context, WidgetRef ref, FastingRoutine routine) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Jejum'),
+        content: const Text('Tem certeza que deseja excluir esta rotina de jejum?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Excluir')),
+        ],
+      ),
     );
 
-    if (todayMeals.isNotEmpty) {
-      next = todayMeals.first;
-      nextDateTime = DateTime(
-        today.year,
-        today.month,
-        today.day,
-        next.time.hour,
-        next.time.minute,
-      );
-
-      // If the "First meal of today" is earlier than "Last meal of yesterday" (impossible in absolute time, but theoretically checking bounds)
-      // Actually strictly time-wise:
-      // If today is Monday, Yesterday Sunday.
-      // SundayDinner 20:00. MondayBreakfast 08:00. Diff 12h.
-    } else if (tomorrowMeals.isNotEmpty) {
-      // Maybe user skips a whole day?
-      next = tomorrowMeals.first;
-      nextDateTime = DateTime(
-        tomorrow.year,
-        tomorrow.month,
-        tomorrow.day,
-        next.time.hour,
-        next.time.minute,
-      );
+    if (confirm == true) {
+      ref.read(fastingProvider.notifier).deleteFastingRoutine(routine);
     }
+  }
 
-    if (next != null && nextDateTime != null) {
-      final diff = nextDateTime.difference(lastDateTime);
-      // Only valid if positive
-      if (diff.inMinutes > 0) {
+  // Calculate if we are currently fasting or in eating window based on the active routine
+  Map<String, dynamic>? _calculateCurrentState(FastingRoutine routine) {
+    final now = DateTime.now();
+    
+    // We need to check if a fast started yesterday and is still going, 
+    // or if a fast started today, etc.
+    
+    // Let's get the theoretical start time for today, yesterday and tomorrow
+    final yesterday = now.subtract(const Duration(days: 1));
+    final tomorrow = now.add(const Duration(days: 1));
+
+    final possibleStarts = [yesterday, now, tomorrow].where((day) {
+      // Check recurrence
+      if (routine.recurrence == RecurrenceType.daily) return true;
+      if (routine.recurrence == RecurrenceType.weekly && routine.startDate.weekday == day.weekday) return true;
+      if (routine.recurrence == RecurrenceType.custom && (routine.customDaysOfWeek?.contains(day.weekday) ?? false)) return true;
+      if (routine.recurrence == RecurrenceType.monthly && (routine.customDaysOfMonth?.contains(day.day) ?? false)) return true;
+      return false;
+    }).map((day) {
+      return DateTime(day.year, day.month, day.day, routine.startTime.hour, routine.startTime.minute);
+    }).toList();
+
+    // Find the current active period (either fasting or eating window following the fast)
+    for (var fastStart in possibleStarts) {
+      final fastEnd = fastStart.add(Duration(hours: routine.fastingHours));
+      final eatingWindowEnd = fastStart.add(const Duration(hours: 24)); // Until next potential fast
+
+      if (now.isAfter(fastStart) && now.isBefore(fastEnd)) {
         return {
-          'hours': diff.inHours,
-          'minutes': diff.inMinutes % 60,
-          'lastMeal': lastYesterday,
-          'nextMeal': next,
+          'isFasting': true,
+          'start': fastStart,
+          'end': fastEnd,
+        };
+      } else if (now.isAfter(fastEnd) && now.isBefore(eatingWindowEnd)) {
+        return {
+          'isFasting': false,
+          'start': fastEnd,
+          'end': eatingWindowEnd,
         };
       }
     }
-
+    
     return null;
-  }
-
-  int _compareTime(DateTime a, DateTime b) {
-    if (a.hour != b.hour) return a.hour.compareTo(b.hour);
-    return a.minute.compareTo(b.minute);
-  }
-
-  List<DietMeal> _getMealsForDay(List<DietMeal> allMeals, DateTime day) {
-    return allMeals.where((meal) {
-      if (isSameDay(meal.startDate, day))
-        return true; // One off? startDate might act as one-off or start of recurrence
-      // Actually LogicProvider has better logic, blindly copying recurrence logic here
-      if (meal.recurrence == RecurrenceType.daily) return true;
-      if (meal.recurrence == RecurrenceType.weekly &&
-          meal.startDate.weekday == day.weekday)
-        return true;
-      if (meal.recurrence == RecurrenceType.custom &&
-          (meal.customDaysOfWeek?.contains(day.weekday) ?? false))
-        return true;
-      return false;
-    }).toList();
-  }
-
-  // Helper for same day check
-  bool isSameDay(DateTime? a, DateTime? b) {
-    if (a == null || b == null) return false;
-    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }
