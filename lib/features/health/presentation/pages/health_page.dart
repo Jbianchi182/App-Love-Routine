@@ -6,9 +6,6 @@ class HealthPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Bem-Estar')),
-      body: const HealthView(),
-    );
+    return const HealthView();
   }
 }

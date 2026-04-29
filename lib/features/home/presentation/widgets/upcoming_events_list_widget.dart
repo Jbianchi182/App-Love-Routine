@@ -7,6 +7,8 @@ import 'package:love_routine_app/features/calendar/presentation/providers/calend
 import 'package:love_routine_app/features/calendar/domain/models/calendar_event.dart';
 import 'package:love_routine_app/features/diets/domain/models/fasting_routine.dart';
 import 'package:intl/intl.dart';
+import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
+import 'package:love_routine_app/features/calendar/presentation/widgets/routine_dialog.dart';
 
 class UpcomingEventsListWidget extends ConsumerWidget {
   final int daysToShow;
@@ -104,6 +106,7 @@ class UpcomingEventsListWidget extends ConsumerWidget {
                     subtitle: Text(
                       '${DateFormat('dd/MM').format(event.time)} - ${DateFormat('HH:mm').format(event.time)}',
                     ),
+                    trailing: _buildTrailing(context, ref, event),
                   ),
                 );
               },
@@ -111,6 +114,69 @@ class UpcomingEventsListWidget extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget? _buildTrailing(BuildContext context, WidgetRef ref, CalendarEvent event) {
+    if (event.type == CalendarEventType.routine && event.originalObject is Routine) {
+      final routine = event.originalObject as Routine;
+      return PopupMenuButton<String>(
+        onSelected: (value) async {
+          if (value == 'edit') {
+            await showDialog(
+              context: context,
+              builder: (context) => RoutineDialog(
+                routine: routine,
+                initialDate: event.time,
+              ),
+            );
+          } else if (value == 'delete') {
+            final confirm = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Excluir Rotina'),
+                content: Text('Deseja excluir "${routine.title}"?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Cancelar'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                  ),
+                ],
+              ),
+            );
+            if (confirm == true) {
+              await ref.read(routineProvider.notifier).deleteRoutine(routine);
+            }
+          }
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined, size: 20),
+                SizedBox(width: 12),
+                Text('Editar'),
+              ],
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                SizedBox(width: 12),
+                Text('Excluir', style: TextStyle(color: Colors.red)),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    return null;
   }
 
   Color _getColorForType(CalendarEventType type, ThemeData theme) {

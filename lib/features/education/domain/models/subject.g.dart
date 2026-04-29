@@ -25,13 +25,14 @@ class SubjectAdapter extends TypeAdapter<Subject> {
       ..maxScore = fields[5] as double?
       ..notes = (fields[6] as List).cast<String>()
       ..gradingFormula = fields[7] as String?
-      ..gradingSchemeId = fields[8] as int?;
+      ..gradingSchemeId = fields[8] as int?
+      ..courseId = fields[9] as int?;
   }
 
   @override
   void write(BinaryWriter writer, Subject obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -49,7 +50,9 @@ class SubjectAdapter extends TypeAdapter<Subject> {
       ..writeByte(7)
       ..write(obj.gradingFormula)
       ..writeByte(8)
-      ..write(obj.gradingSchemeId);
+      ..write(obj.gradingSchemeId)
+      ..writeByte(9)
+      ..write(obj.courseId);
   }
 
   @override

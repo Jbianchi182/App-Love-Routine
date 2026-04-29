@@ -11,6 +11,7 @@ class CustomTaskCard extends StatelessWidget {
 
   final double? imageAlignmentY;
   final double? fontSize;
+  final VoidCallback? onDelete;
 
   const CustomTaskCard({
     super.key,
@@ -22,6 +23,7 @@ class CustomTaskCard extends StatelessWidget {
     this.onCheckboxChanged,
     this.imageAlignmentY,
     this.fontSize,
+    this.onDelete,
   });
 
   @override
@@ -34,69 +36,63 @@ class CustomTaskCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          height: 100, // Compact height
+          height: 60, // Reduced height as requested
           decoration: BoxDecoration(
+            color: backgroundImagePath == null ? Colors.white : null,
             image: backgroundImagePath != null
                 ? DecorationImage(
                     image: AssetImage(backgroundImagePath!),
                     fit: BoxFit.cover,
-                    alignment: Alignment(
-                      0,
-                      imageAlignmentY ?? 0,
-                    ), // User alignment
-                  )
-                : const DecorationImage(
-                    image: NetworkImage('https://via.placeholder.com/400x200'),
-                    fit: BoxFit.cover,
-                  ),
-            gradient: backgroundImagePath == null
-                ? LinearGradient(
-                    colors: [Colors.purple.shade200, Colors.blue.shade200],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+                    alignment: Alignment(0, imageAlignmentY ?? 0),
                   )
                 : null,
           ),
           child: Stack(
             children: [
-              // gradient overlay for text readability
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+              if (backgroundImagePath != null)
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                    ),
                   ),
                 ),
-              ),
               Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
                           Text(
-                            title,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: fontSize ?? 16,
-                              shadows: const [
-                                Shadow(blurRadius: 2, color: Colors.black45),
-                              ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
                             time,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: backgroundImagePath == null ? Colors.black54 : Colors.white70,
                               fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '•',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: TextStyle(
+                                color: backgroundImagePath == null ? Colors.black87 : Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: fontSize ?? 15,
+                                shadows: backgroundImagePath == null 
+                                  ? null 
+                                  : const [Shadow(blurRadius: 2, color: Colors.black45)],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -107,11 +103,39 @@ class CustomTaskCard extends StatelessWidget {
                       onChanged: onCheckboxChanged,
                       activeColor: Theme.of(context).colorScheme.primary,
                       checkColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70, width: 2),
+                      side: BorderSide(
+                        color: backgroundImagePath == null ? Colors.grey : Colors.white70, 
+                        width: 2,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
+                    if (onDelete != null)
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: backgroundImagePath == null ? Colors.black54 : Colors.white,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onSelected: (value) {
+                          if (value == 'delete') onDelete!();
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Excluir', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

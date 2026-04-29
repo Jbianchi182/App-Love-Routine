@@ -33,6 +33,9 @@ class Subject extends HiveObject {
   @HiveField(8)
   int? gradingSchemeId;
 
+  @HiveField(9)
+  int? courseId; // ID (key) do Curso pai
+
   // Runtime only - populated by provider
   List<GradeEntry> grades = [];
 }

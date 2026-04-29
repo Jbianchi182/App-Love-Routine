@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:love_routine_app/features/education/domain/models/subject.dart';
-import 'package:love_routine_app/features/education/domain/models/grade_entry.dart';
+import 'package:love_routine_app/features/education/domain/models/course.dart';
+import 'package:love_routine_app/features/education/domain/models/grading_scheme.dart';
 import 'package:love_routine_app/features/education/presentation/providers/education_provider.dart';
-import 'package:love_routine_app/features/education/presentation/widgets/subject_dialog.dart';
-import 'package:love_routine_app/features/education/presentation/pages/subject_details_page.dart';
+import 'package:love_routine_app/features/education/presentation/pages/course_details_page.dart';
 import 'package:love_routine_app/features/education/presentation/pages/grading_schemes_page.dart';
 import 'package:love_routine_app/features/education/presentation/providers/grading_scheme_provider.dart';
-import 'package:math_expressions/math_expressions.dart';
-import 'package:intl/intl.dart';
 
 class EducationPage extends ConsumerWidget {
   const EducationPage({super.key});
@@ -20,36 +17,27 @@ class EducationPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Educação'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.functions),
-            tooltip: 'Gerenciar Fórmulas',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const GradingSchemesPage(),
-                ),
-              );
-            },
-          ),
-        ],
+        title: const Text(
+          'Meus Cursos',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showSubjectDialog(context, ref),
-        child: const Icon(Icons.add),
+      floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'add_course',
+        onPressed: () => _showCourseDialog(context, ref),
+        label: const Text('+ Adicionar Curso'),
       ),
       body: subjectsAsync.when(
-        data: (subjects) {
-          if (subjects.isEmpty) {
-            return const Center(child: Text('Nenhuma matéria cadastrada.'));
+        data: (courses) {
+          if (courses.isEmpty) {
+            return const Center(child: Text('Nenhum curso cadastrado.'));
           }
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: subjects.length,
+            itemCount: courses.length,
             itemBuilder: (context, index) {
-              final subject = subjects[index];
-              return _buildSubjectCard(context, ref, subject);
+              final course = courses[index];
+              return _buildCourseCard(context, ref, course);
             },
           );
         },
@@ -59,49 +47,30 @@ class EducationPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildSubjectCard(
+  Widget _buildCourseCard(
     BuildContext context,
     WidgetRef ref,
-    Subject subject,
+    Course course,
   ) {
-    final grades = subject.grades.toList();
-    // Use the same logic as details page? Ideally refactor to shared logic.
-    // For now, simpler approximation or duplicate logic?
-    // Let's rely on SubjectDetailsPage logic but simplified or copy logic.
-    // Ideally put logic in Subject model or provider?
-    // Let's assume standard weighted average for list view or implement formula calc here too.
-    // To implement formula calc here we need gradingSchemeProvider.
-    final average = _calculateAverage(grades, ref, subject);
-    final passing = subject.passingScore ?? 6.0;
-    final isPassing = average >= passing;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => SubjectDetailsPage(subject: subject),
+              builder: (context) => CourseDetailsPage(course: course),
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12), // Match card shape
+        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundColor: isPassing
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.red.withOpacity(0.2),
-                child: Text(
-                  average.toStringAsFixed(1),
-                  style: TextStyle(
-                    color: isPassing ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                child: Icon(Icons.school, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -109,7 +78,7 @@ class EducationPage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      subject.name,
+                      course.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -117,7 +86,7 @@ class EducationPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      subject.teacherName ?? 'Sem professor',
+                      course.institution,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Theme.of(context).colorScheme.secondary,
                       ),
@@ -133,68 +102,160 @@ class EducationPage extends ConsumerWidget {
     );
   }
 
-  double _calculateAverage(
-    List<GradeEntry> grades,
-    WidgetRef ref,
-    Subject subject,
-  ) {
-    if (grades.isEmpty) return 0.0;
+  Future<void> _showCourseDialog(BuildContext context, WidgetRef ref) async {
+    final nameController = TextEditingController();
+    String? selectedInstitution;
+    String? customInstitutionName;
+    int? customSchemeId;
 
-    // Quick copy of logic from SubjectDetailsPage
-    // TODO: Refactor into a shared utility or extension
-    String? formulaToCheck;
-    if (subject.gradingSchemeId != null) {
-      final schemes = ref.read(gradingSchemeProvider).asData?.value ?? [];
-      // ignore: collection_methods_unrelated_type
-      final scheme = schemes
-          .where((s) => s.key == subject.gradingSchemeId)
-          .firstOrNull;
-      if (scheme != null) formulaToCheck = scheme.formula;
-    } else if (subject.gradingFormula != null &&
-        subject.gradingFormula!.trim().isNotEmpty) {
-      formulaToCheck = subject.gradingFormula!;
-    }
+    // Tabela de Presets (Nome da Instituição -> Fórmula)
+    final presets = {
+      'USP / FATEC (Simples)': '(P1 + P2) / 2',
+      'USP / Unicamp (Ponderada)': '(P1 + P2 * 2) / 3',
+      'UFRJ / UFSC / UnB': '(P1 + P2 + P3) / 3',
+      'UFMG (100 pts)': 'P1 + P2 + P3',
+      'USCS': '(P1 + ((P2 + Atividades) / 2)) / 2',
+      'Padrão c/ Atividades': '(P1 * 4 + P2 * 4 + Atividades * 2) / 10',
+    };
 
-    if (formulaToCheck != null) {
-      try {
-        final parser = Parser();
-        final expression = parser.parse(formulaToCheck);
-        final context = ContextModel();
-
-        final tagSums = <String, double>{};
-        for (var g in grades) {
-          if (g.tag != null && g.tag!.isNotEmpty) {
-            tagSums[g.tag!] = (tagSums[g.tag!] ?? 0.0) + g.score;
-          }
-        }
-        for (var entry in tagSums.entries) {
-          context.bindVariable(Variable(entry.key), Number(entry.value));
-        }
-        return expression.evaluate(EvaluationType.REAL, context);
-      } catch (e) {
-        return 0.0;
-      }
-    }
-
-    // Default Weighted
-    double weightedSum = 0;
-    double totalWeight = 0;
-    for (var g in grades) {
-      final w = g.weight ?? 1.0;
-      weightedSum += g.score * w;
-      totalWeight += w;
-    }
-    if (totalWeight == 0) return 0.0;
-    return weightedSum / totalWeight;
-  }
-
-  Future<void> _showSubjectDialog(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<Subject>(
+    await showDialog(
       context: context,
-      builder: (_) => const SubjectDialog(),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final schemes = ref.watch(gradingSchemeProvider).asData?.value ?? [];
+            final isCustom = selectedInstitution == 'Outra Instituição';
+            
+            return AlertDialog(
+              title: const Text('Novo Curso'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Nome do Curso (ex: Engenharia)'),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownMenu<String>(
+                      label: const Text('Instituição'),
+                      expandedInsets: EdgeInsets.zero,
+                      dropdownMenuEntries: [
+                        ...presets.keys.map((k) => DropdownMenuEntry<String>(value: k, label: k)),
+                        const DropdownMenuEntry<String>(value: 'Outra Instituição', label: 'Outra Instituição'),
+                      ],
+                      onSelected: (val) {
+                        setState(() {
+                          selectedInstitution = val;
+                        });
+                      },
+                    ),
+                    
+                    if (isCustom) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        onChanged: (val) {
+                          customInstitutionName = val;
+                        },
+                        decoration: const InputDecoration(labelText: 'Nome da Instituição'),
+                      ),
+                      const SizedBox(height: 16),
+                      if (schemes.isNotEmpty)
+                        DropdownMenu<int>(
+                          label: const Text('Fórmula de Avaliação'),
+                          expandedInsets: EdgeInsets.zero,
+                          dropdownMenuEntries: schemes.map((s) => DropdownMenuEntry<int>(value: s.key, label: s.name)).toList(),
+                          onSelected: (val) {
+                            setState(() {
+                              customSchemeId = val;
+                            });
+                          },
+                        )
+                      else
+                        const Text(
+                          'Nenhuma fórmula cadastrada. Crie uma em "Fórmulas de avaliação" primeiro.',
+                          style: TextStyle(color: Colors.orange, fontSize: 12),
+                        ),
+                    ] else if (selectedInstitution != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.auto_awesome, size: 16, color: Colors.blue),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Fórmula selecionada automaticamente:',
+                                  style: TextStyle(fontSize: 12, color: Colors.blue.shade900, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              presets[selectedInstitution]!,
+                              style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (nameController.text.isNotEmpty && selectedInstitution != null) {
+                      String finalInstitutionName = isCustom ? (customInstitutionName ?? 'Desconhecida') : selectedInstitution!;
+                      int? finalSchemeId;
+
+                      if (isCustom) {
+                        finalSchemeId = customSchemeId;
+                      } else {
+                        // Look for an existing scheme with this exact formula, or create a new one!
+                        final formulaStr = presets[selectedInstitution]!;
+                        final existingScheme = schemes.firstWhere(
+                          (s) => s.formula == formulaStr,
+                          orElse: () {
+                            final newScheme = GradingScheme()
+                              ..name = 'Fórmula $selectedInstitution'
+                              ..formula = formulaStr;
+                            ref.read(gradingSchemeProvider.notifier).addScheme(newScheme);
+                            return newScheme;
+                          },
+                        );
+                        finalSchemeId = existingScheme.key;
+                      }
+
+                      final course = Course()
+                        ..name = nameController.text
+                        ..institution = finalInstitutionName
+                        ..gradingSchemeId = finalSchemeId;
+                      
+                      ref.read(educationProvider.notifier).addCourse(course);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('Salvar'),
+                ),
+              ],
+            );
+          }
+        );
+      },
     );
-    if (result != null) {
-      ref.read(educationProvider.notifier).addSubject(result);
-    }
   }
 }

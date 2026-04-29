@@ -49,24 +49,75 @@ class GradingSchemesPage extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Nova Fórmula'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nome (ex: Padrão Engenharia)',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Presets de Universidades',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: formulaController,
-              decoration: const InputDecoration(
-                labelText: 'Fórmula',
-                hintText: 'Ex: (N1 * 0.4) + (N2 * 0.6)',
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _PresetChip(
+                    label: 'USP / FATEC (Simples)',
+                    formula: '(P1 + P2) / 2',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                  _PresetChip(
+                    label: 'USP / Unicamp (Ponderada)',
+                    formula: '(P1 + P2 * 2) / 3',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                  _PresetChip(
+                    label: 'UFRJ / UFSC / UnB',
+                    formula: '(P1 + P2 + P3) / 3',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                  _PresetChip(
+                    label: 'UFMG (100 pts)',
+                    formula: 'P1 + P2 + P3',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                  _PresetChip(
+                    label: 'USCS',
+                    formula: '(P1 + ((P2 + Atividades) / 2)) / 2',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                  _PresetChip(
+                    label: 'Padrão c/ Atividades',
+                    formula: '(P1 * 4 + P2 * 4 + Atividades * 2) / 10',
+                    nameController: nameController,
+                    formulaController: formulaController,
+                  ),
+                ],
               ),
-            ),
-          ],
+              const Divider(height: 32),
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Nome da Fórmula',
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: formulaController,
+                decoration: const InputDecoration(
+                  labelText: 'Fórmula Matemática',
+                  hintText: 'Ex: (P1 + P2) / 2',
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -88,6 +139,31 @@ class GradingSchemesPage extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PresetChip extends StatelessWidget {
+  final String label;
+  final String formula;
+  final TextEditingController nameController;
+  final TextEditingController formulaController;
+
+  const _PresetChip({
+    required this.label,
+    required this.formula,
+    required this.nameController,
+    required this.formulaController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      onPressed: () {
+        nameController.text = label;
+        formulaController.text = formula;
+      },
     );
   }
 }

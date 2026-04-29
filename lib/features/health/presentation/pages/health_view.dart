@@ -17,28 +17,43 @@ class HealthView extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Saúde',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.small(
-            heroTag: 'add_medication',
-            onPressed: () => _showMedicationDialog(context, ref),
-            child: const Icon(Icons.medication),
+          SizedBox(
+            width: 160,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_medication',
+              onPressed: () => _showMedicationDialog(context, ref),
+              label: const Text('+ medicamento'),
+            ),
           ),
           const SizedBox(height: 16),
-          FloatingActionButton(
-            heroTag: 'add_appointment',
-            onPressed: () => _showAppointmentDialog(context, ref),
-            child: const Icon(Icons.calendar_today),
+          SizedBox(
+            width: 160,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_appointment',
+              onPressed: () => _showAppointmentDialog(context, ref),
+              label: const Text('+ consulta'),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionHeader(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              _buildSectionHeader(
               context,
               'Medicamentos',
               Icons.medication_liquid,
@@ -173,7 +188,8 @@ class HealthView extends ConsumerWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader(

@@ -11,6 +11,7 @@ import 'package:love_routine_app/features/diets/domain/models/diet_meal.dart';
 import 'package:love_routine_app/features/health/domain/models/medical_appointment.dart';
 import 'package:love_routine_app/features/health/domain/models/medication.dart';
 import 'package:love_routine_app/features/education/domain/models/subject.dart';
+import 'package:love_routine_app/features/education/domain/models/course.dart';
 import 'package:love_routine_app/features/education/domain/models/grade_entry.dart';
 import 'package:love_routine_app/features/education/domain/models/grading_scheme.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
@@ -36,6 +37,7 @@ void main() async {
     Hive.registerAdapter(DietMealAdapter());
     Hive.registerAdapter(MedicalAppointmentAdapter());
     Hive.registerAdapter(MedicationAdapter());
+    Hive.registerAdapter(CourseAdapter());
     Hive.registerAdapter(SubjectAdapter());
     Hive.registerAdapter(GradeEntryAdapter());
 
@@ -59,6 +61,7 @@ void main() async {
     await Hive.openBox<DietMeal>('diet_meals');
     await Hive.openBox<MedicalAppointment>('medical_appointments');
     await Hive.openBox<Medication>('medications');
+    await Hive.openBox<Course>('courses');
     await Hive.openBox<Subject>('subjects');
     await Hive.openBox<GradeEntry>('grade_entries');
     await Hive.openBox<FinanceTransaction>('transactions');

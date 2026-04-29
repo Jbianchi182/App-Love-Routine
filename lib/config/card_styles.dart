@@ -2,6 +2,7 @@ class CardStyles {
   // Key -> Asset Path (assuming png/jpg in assets/images/cards/)
   // User should rename their files to match these or we update this map
   static const Map<String, String> styles = {
+    'none': '', // Special key for no image
     'default': 'assets/images/cards/estrelas.jpg',
     'abacate': 'assets/images/cards/abacate.jpg',
     'abacate_02': 'assets/images/cards/abacate 02.jpg',
@@ -41,7 +42,8 @@ class CardStyles {
     'viagem': 'assets/images/cards/viagem.jpg',
   };
 
-  static String getAsset(String? key) {
+  static String? getAsset(String? key) {
+    if (key == 'none') return null;
     if (key == null || !styles.containsKey(key)) {
       return styles['default']!;
     }

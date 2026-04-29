@@ -20,24 +20,32 @@ class FinancePage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Finanças')),
+      appBar: AppBar(
+        title: const Text(
+          'Finanças',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context, ref),
         child: const Icon(Icons.add),
       ),
-      body: transactionsAsync.when(
-        data: (_) {
-          double totalIncome = 0;
-          double totalExpense = 0;
-          for (var t in filteredTransactions) {
-            if (t.type == TransactionType.income) totalIncome += t.amount;
-            if (t.type == TransactionType.expense) totalExpense += t.amount;
-          }
+      body: SafeArea(
+        child: transactionsAsync.when(
+          data: (_) {
+            double totalIncome = 0;
+            double totalExpense = 0;
+            for (var t in filteredTransactions) {
+              if (t.type == TransactionType.income) totalIncome += t.amount;
+              if (t.type == TransactionType.expense) totalExpense += t.amount;
+            }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              SizedBox(
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const SizedBox(height: 8),
+                const SizedBox(height: 16),
+                SizedBox(
                 height: 40,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
@@ -90,8 +98,9 @@ class FinancePage extends ConsumerWidget {
             ],
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro: $err')),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('Erro: $err')),
+        ),
       ),
     );
   }

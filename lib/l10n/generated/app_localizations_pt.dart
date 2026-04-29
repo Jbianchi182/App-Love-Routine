@@ -33,10 +33,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get calendarTitle => 'Calendário';
 
   @override
-  String get healthTitle => 'Bem-Estar';
+  String get healthTitle => 'Saúde';
 
   @override
-  String get educationTitle => 'Educação';
+  String get educationTitle => 'Estudos';
 
   @override
   String get financeTitle => 'Finanças';
@@ -48,7 +48,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dietTitle => 'Dieta';
 
   @override
-  String get shoppingTitle => 'Compras';
+  String get shoppingTitle => 'Mercado';
 
   @override
   String get hello => 'Olá,';

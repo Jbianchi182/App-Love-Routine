@@ -132,17 +132,17 @@ class MainScaffold extends ConsumerWidget {
       case 'calendar':
         return l10n.calendarTitle;
       case 'finance':
-        return 'Finanças'; // TODO: Localize
+        return l10n.financeTitle;
       case 'health':
-        return 'Saúde';
+        return l10n.healthTitle;
       case 'education':
-        return 'Estudos';
+        return l10n.educationTitle;
       case 'diet':
-        return 'Dieta';
+        return l10n.dietTitle;
       case 'shopping':
-        return 'Mercado';
+        return l10n.shoppingTitle;
       case 'categories':
-        return 'Menu';
+        return l10n.menuTitle;
       case 'settings':
         return l10n.settingsTitle;
       default:

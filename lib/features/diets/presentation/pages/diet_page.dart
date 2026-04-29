@@ -21,28 +21,45 @@ class DietPage extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      // AppBar removed for tab integration
+      appBar: AppBar(
+        title: const Text(
+          'Dieta',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          FloatingActionButton.extended(
-            heroTag: 'add_fasting',
-            onPressed: () => _showFastingDialog(context, ref),
-            label: const Text('+ Jejum'),
+          SizedBox(
+            width: 160,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_fasting',
+              onPressed: () => _showFastingDialog(context, ref),
+              label: const Text('+ Jejum'),
+            ),
           ),
           const SizedBox(height: 16),
-          FloatingActionButton.extended(
-            heroTag: 'add_diet',
-            onPressed: () => _showDietDialog(context, ref),
-            label: const Text('Novo Plano'),
-            icon: const Icon(Icons.add),
+          SizedBox(
+            width: 160,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_diet',
+              onPressed: () => _showDietDialog(context, ref),
+              label: const Text('+ Novo Plano'),
+            ),
           ),
         ],
       ),
-      body: dietsAsync.when(
-        data: (diets) {
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        child: dietsAsync.when(
+          data: (diets) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
             itemCount: diets.isEmpty ? 2 : diets.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
@@ -165,10 +182,14 @@ class DietPage extends ConsumerWidget {
                 ),
               );
             },
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Erro: $err')),
+          ),
+                ),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (err, stack) => Center(child: Text('Erro: $err')),
+        ),
       ),
     );
   }

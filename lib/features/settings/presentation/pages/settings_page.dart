@@ -16,59 +16,74 @@ class SettingsPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.menuTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSectionHeader(context, 'Personalização da Home'),
-          _buildHomePreferences(context, ref),
+      appBar: AppBar(
+        title: Text(
+          l10n.settingsTitle, // Using settingsTitle for better context
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+             const SizedBox(height: 8),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildSectionHeader(context, 'Personalização da Home'),
+                  _buildHomePreferences(context, ref),
 
-          const Divider(height: 32),
+                  const Divider(height: 32),
 
-          // Settings Section
-          _buildSectionHeader(context, l10n.settingsTitle),
-          _buildSectionHeader(context, l10n.themeTitle),
-          Card(
-            child: Column(
-              children: AppThemeType.values.map((type) {
-                return RadioListTile<AppThemeType>(
-                  title: Text(_getThemeName(type)),
-                  value: type,
-                  groupValue: settings.themeType,
-                  onChanged: (value) {
-                    if (value != null) {
-                      notifier.setTheme(value);
-                    }
-                  },
-                );
-              }).toList(),
+                  // Settings Section
+                  _buildSectionHeader(context, l10n.settingsTitle),
+                  _buildSectionHeader(context, l10n.themeTitle),
+                  Card(
+                    child: Column(
+                      children: AppThemeType.values.map((type) {
+                        return RadioListTile<AppThemeType>(
+                          title: Text(_getThemeName(type)),
+                          value: type,
+                          groupValue: settings.themeType,
+                          onChanged: (value) {
+                            if (value != null) {
+                              notifier.setTheme(value);
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSectionHeader(context, l10n.languageTitle),
+                  Card(
+                    child: Column(
+                      children: [
+                        RadioListTile<String>(
+                          title: const Text('Português'),
+                          value: 'pt',
+                          groupValue: settings.locale.languageCode,
+                          onChanged: (value) {
+                            if (value != null) notifier.setLocale(const Locale('pt'));
+                          },
+                        ),
+                        RadioListTile<String>(
+                          title: const Text('English'),
+                          value: 'en',
+                          groupValue: settings.locale.languageCode,
+                          onChanged: (value) {
+                            if (value != null) notifier.setLocale(const Locale('en'));
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildSectionHeader(context, l10n.languageTitle),
-          Card(
-            child: Column(
-              children: [
-                RadioListTile<String>(
-                  title: const Text('Português'),
-                  value: 'pt',
-                  groupValue: settings.locale.languageCode,
-                  onChanged: (value) {
-                    if (value != null) notifier.setLocale(const Locale('pt'));
-                  },
-                ),
-                RadioListTile<String>(
-                  title: const Text('English'),
-                  value: 'en',
-                  groupValue: settings.locale.languageCode,
-                  onChanged: (value) {
-                    if (value != null) notifier.setLocale(const Locale('en'));
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

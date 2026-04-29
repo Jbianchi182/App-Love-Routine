@@ -53,19 +53,29 @@ class CardStyleSelector extends StatelessWidget {
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
-                            Image.asset(
-                              asset,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  color: _getColorForStyle(key),
-                                  child: const Icon(
-                                    Icons.image_not_supported,
-                                    color: Colors.white54,
-                                  ),
-                                );
-                              },
-                            ),
+                            if (key == 'none')
+                              Container(
+                                color: Colors.grey.shade200,
+                                child: const Icon(
+                                  Icons.block,
+                                  color: Colors.grey,
+                                  size: 30,
+                                ),
+                              )
+                            else
+                              Image.asset(
+                                asset,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: _getColorForStyle(key),
+                                    child: const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.white54,
+                                    ),
+                                  );
+                                },
+                              ),
                             if (isSelected)
                               Center(
                                 child: CircleAvatar(

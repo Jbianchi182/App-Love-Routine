@@ -10,112 +10,136 @@ class ShoppingListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemsAsync = ref.watch(shoppingProvider);
+    final hasItems = itemsAsync.asData?.value.isNotEmpty ?? false;
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lista de Compras'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
+        title: const Text(
+          'Mercado',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'history_btn',
             onPressed: () => context.push('/menu/shopping/history'),
-            tooltip: 'Histórico de Compras',
+            icon: const Icon(Icons.history),
+            label: const Text('Ver Histórico', style: TextStyle(fontWeight: FontWeight.bold)),
+            backgroundColor: theme.colorScheme.primaryContainer,
+            foregroundColor: theme.colorScheme.onPrimaryContainer,
           ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'add_item_btn',
+            onPressed: () => _showItemDialog(context, ref, null),
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar item na lista', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          if (hasItems) const SizedBox(height: 130), // Offset for the bottom bar
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showItemDialog(context, ref, null),
-        child: const Icon(Icons.add),
-      ),
-      body: itemsAsync.when(
-        data: (items) {
-          if (items.isEmpty) {
-            return const Center(
-              child: Text(
-                'Sua lista está vazia.\nAdicione itens com o botão +',
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-
-          final sortedItems = List<ShoppingItem>.from(items)
-            ..sort((a, b) {
-              if (a.isBought == b.isBought) return 0;
-              return a.isBought ? 1 : -1;
-            });
-
-          double total = 0;
-          int boughtCount = 0;
-          for (var item in items) {
-            if (item.isBought) {
-              boughtCount++;
-              if (item.price != null) {
-                total += item.price! * item.quantity;
-              }
-            }
-          }
-
-          return Column(
-            children: [
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: sortedItems.length,
-                  separatorBuilder: (_, __) => const Divider(),
-                  itemBuilder: (context, index) {
-                    final item = sortedItems[index];
-                    return _ShoppingItemTile(item: item);
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: theme.cardColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      offset: const Offset(0, -2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '$boughtCount/${items.length} comprados',
-                          style: theme.textTheme.bodyMedium,
-                        ),
-                        Text(
-                          'Total: R\$ ${total.toStringAsFixed(2)}',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton(
-                        onPressed: boughtCount > 0
-                            ? () => _confirmFinalize(context, ref, total)
-                            : null,
-                        child: const Text('Finalizar Compra'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const SizedBox(height: 8),
+            Expanded(
+              child: itemsAsync.when(
+                data: (items) {
+                  if (items.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        'Sua lista está vazia.\nAdicione itens com o botão +',
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
-                ),
+                    );
+                  }
+
+                  final sortedItems = List<ShoppingItem>.from(items)
+                    ..sort((a, b) {
+                      if (a.isBought == b.isBought) return 0;
+                      return a.isBought ? 1 : -1;
+                    });
+
+                  double total = 0;
+                  int boughtCount = 0;
+                  for (var item in items) {
+                    if (item.isBought) {
+                      boughtCount++;
+                      if (item.price != null) {
+                        total += item.price! * item.quantity;
+                      }
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      Expanded(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: sortedItems.length,
+                          separatorBuilder: (_, __) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final item = sortedItems[index];
+                            return _ShoppingItemTile(item: item);
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.cardColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              offset: const Offset(0, -2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '$boughtCount/${items.length} comprados',
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                Text(
+                                  'Total: R\$ ${total.toStringAsFixed(2)}',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: boughtCount > 0
+                                    ? () => _confirmFinalize(context, ref, total)
+                                    : null,
+                                child: const Text('Finalizar Compra'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Center(child: Text('Erro: $e')),
               ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Erro: $e')),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -125,35 +149,102 @@ class ShoppingListPage extends ConsumerWidget {
     WidgetRef ref,
     double total,
   ) async {
-    final confirm = await showDialog<bool>(
+    final marketController = TextEditingController();
+    String paymentMethod = 'Cartão';
+    final cardDigitsController = TextEditingController();
+
+    final result = await showDialog<Map<String, String?>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Finalizar Compra'),
-        content: Text(
-          'Deseja finalizar a compra?\n\n'
-          'Total: R\$ ${total.toStringAsFixed(2)}\n\n'
-          'Os itens marcados serão movidos para o histórico. '
-          'Os itens não marcados permanecerão na lista.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Finalizar Compra'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Total: R\$ ${total.toStringAsFixed(2)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: marketController,
+                  decoration: const InputDecoration(
+                    labelText: 'Em qual mercado?',
+                    hintText: 'Ex: Carrefour, Pão de Açúcar',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Forma de Pagamento:'),
+                ),
+                DropdownButton<String>(
+                  isExpanded: true,
+                  value: paymentMethod,
+                  items: ['Cartão', 'Dinheiro', 'Pix'].map((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  onChanged: (val) {
+                    if (val != null) setState(() => paymentMethod = val);
+                  },
+                ),
+                if (paymentMethod == 'Cartão') ...[
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: cardDigitsController,
+                    decoration: const InputDecoration(
+                      labelText: 'Últimos 4 dígitos do cartão',
+                      hintText: '0000',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (marketController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Por favor, informe o mercado')),
+                  );
+                  return;
+                }
+                Navigator.pop(context, {
+                  'market': marketController.text.trim(),
+                  'payment': paymentMethod,
+                  'digits': cardDigitsController.text.length == 4 ? cardDigitsController.text : null,
+                });
+              },
+              child: const Text('Confirmar'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Finalizar'),
-          ),
-        ],
       ),
     );
 
-    if (confirm == true) {
-      await ref.read(shoppingProvider.notifier).finalizePurchase();
+    if (result != null) {
+      await ref.read(shoppingProvider.notifier).finalizePurchase(
+            marketName: result['market']!,
+            paymentMethod: result['payment']!,
+            lastFourDigits: result['digits'],
+          );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Compra finalizada e salva no histórico!'),
+            content: Text('Compra finalizada e registrada no financeiro!'),
           ),
         );
       }

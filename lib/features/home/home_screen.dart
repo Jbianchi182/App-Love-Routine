@@ -147,11 +147,11 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   HomeCalendarWidget(
                     onDaySelected: (day) {
-                      final logic = ref.read(calendarLogicProvider);
-                      final events = logic.getEventsForDay(day);
-                      if (events.isEmpty) {
-                        _showRoutineDialog(context, ref, routine: null);
-                      }
+                      // Always show dialog to add routine when day is selected/tapped
+                      // Or maybe only if tapped again? 
+                      // User wants to be able to create more than one. 
+                      // Let's make it so if they tap the day, it opens the dialog.
+                      _showRoutineDialog(context, ref, routine: null);
                     },
                   ),
                   const SizedBox(height: 16),
@@ -207,13 +207,13 @@ class HomeScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: _buildGroupedEvents(context, futureEvents, now),
+          children: _buildGroupedEvents(context, ref, futureEvents, now),
         ),
       ),
     );
   }
 
-  List<Widget> _buildGroupedEvents(BuildContext context, List<CalendarEvent> futureEvents, DateTime now) {
+  List<Widget> _buildGroupedEvents(BuildContext context, WidgetRef ref, List<CalendarEvent> futureEvents, DateTime now) {
     final Map<DateTime, List<CalendarEvent>> groupedEvents = {};
     for (var event in futureEvents) {
       final date = DateTime(event.time.year, event.time.month, event.time.day);
@@ -256,34 +256,84 @@ class HomeScreen extends ConsumerWidget {
       );
 
       for (var event in events) {
-        widgets.add(
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 50,
-                  child: Text(
-                    DateFormat('HH:mm').format(event.time),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurfaceVariant,
+        if (event.type == CalendarEventType.routine && event.originalObject is Routine) {
+          final routine = event.originalObject as Routine;
+          widgets.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6.0),
+              child: CustomTaskCard(
+                title: routine.title,
+                time: DateFormat('HH:mm').format(routine.time),
+                backgroundImagePath: CardStyles.getAsset(routine.cardStyle),
+                imageAlignmentY: routine.imageAlignmentY,
+                fontSize: routine.fontSize,
+                isCompleted: routine.status == RoutineStatus.completedOnTime,
+                onCheckboxChanged: (val) {
+                  final newStatus = val == true
+                      ? RoutineStatus.completedOnTime
+                      : RoutineStatus.pending;
+                  ref.read(routineProvider.notifier).updateStatus(routine, newStatus);
+                },
+                onTap: () {
+                  _showRoutineDialog(context, ref, routine: routine);
+                },
+                onDelete: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Excluir Rotina'),
+                      content: Text('Deseja excluir "${routine.title}"?'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    event.title,
-                    style: TextStyle(
-                      decoration: event.isCompleted ? TextDecoration.lineThrough : null,
-                    ),
-                  ),
-                ),
-              ],
+                  );
+                  if (confirm == true) {
+                    await ref.read(routineProvider.notifier).deleteRoutine(routine);
+                  }
+                },
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          // Other event types (diet, medication, etc.) still use the simple row for now
+          // or we can use a simpler version of CustomTaskCard
+          widgets.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      DateFormat('HH:mm').format(event.time),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      event.title,
+                      style: TextStyle(
+                        decoration: event.isCompleted ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
 
       if (i < entries.length - 1) {
