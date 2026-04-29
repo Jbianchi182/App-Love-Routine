@@ -35,12 +35,26 @@ class ShoppingHistoryView extends ConsumerWidget {
             final trip = trips[index];
             return Card(
               child: ExpansionTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                  child: Icon(Icons.shopping_cart, color: Theme.of(context).primaryColor),
+                ),
                 title: Text(
-                  DateFormat('dd/MM/yyyy - HH:mm').format(trip.date),
+                  trip.marketName ?? 'Mercado Desconhecido',
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-                subtitle: Text(
-                  'Total: R\$ ${trip.totalAmount.toStringAsFixed(2)} • ${trip.items.length} itens',
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${DateFormat('dd/MM/yyyy HH:mm').format(trip.date)} • R\$ ${trip.totalAmount.toStringAsFixed(2)}',
+                    ),
+                    if (trip.paymentMethodId != null)
+                      Text(
+                        'Pago com: ${trip.paymentMethodId}${trip.lastFourDigits != null ? " (**** ${trip.lastFourDigits})" : ""}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                  ],
                 ),
                 children: trip.items.map((item) {
                   return ListTile(

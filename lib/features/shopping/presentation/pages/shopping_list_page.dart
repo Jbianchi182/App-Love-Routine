@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
 import 'package:love_routine_app/features/shopping/presentation/providers/shopping_provider.dart';
+import 'package:love_routine_app/features/finance/presentation/providers/card_provider.dart';
+import 'package:love_routine_app/features/finance/domain/models/payment_card.dart';
 
 class ShoppingListPage extends ConsumerWidget {
   const ShoppingListPage({super.key});
@@ -26,7 +28,7 @@ class ShoppingListPage extends ConsumerWidget {
         children: [
           FloatingActionButton.extended(
             heroTag: 'history_btn',
-            onPressed: () => context.push('/menu/shopping/history'),
+            onPressed: () => context.push('/shopping/history'),
             icon: const Icon(Icons.history),
             label: const Text('Ver Histórico', style: TextStyle(fontWeight: FontWeight.bold)),
             backgroundColor: theme.colorScheme.primaryContainer,
@@ -151,87 +153,111 @@ class ShoppingListPage extends ConsumerWidget {
   ) async {
     final marketController = TextEditingController();
     String paymentMethod = 'Cartão';
-    final cardDigitsController = TextEditingController();
+    PaymentCard? selectedCard;
 
     final result = await showDialog<Map<String, String?>>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Finalizar Compra'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Total: R\$ ${total.toStringAsFixed(2)}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: marketController,
-                  decoration: const InputDecoration(
-                    labelText: 'Em qual mercado?',
-                    hintText: 'Ex: Carrefour, Pão de Açúcar',
-                    border: OutlineInputBorder(),
+        builder: (context, setState) {
+          final cardsAsync = ref.watch(cardProvider);
+          final cards = cardsAsync.asData?.value ?? [];
+
+          return AlertDialog(
+            title: const Text('Finalizar Compra'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total: R\$ ${total.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                   ),
-                ),
-                const SizedBox(height: 16),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Forma de Pagamento:'),
-                ),
-                DropdownButton<String>(
-                  isExpanded: true,
-                  value: paymentMethod,
-                  items: ['Cartão', 'Dinheiro', 'Pix'].map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (val) {
-                    if (val != null) setState(() => paymentMethod = val);
-                  },
-                ),
-                if (paymentMethod == 'Cartão') ...[
                   const SizedBox(height: 16),
                   TextField(
-                    controller: cardDigitsController,
+                    controller: marketController,
                     decoration: const InputDecoration(
-                      labelText: 'Últimos 4 dígitos do cartão',
-                      hintText: '0000',
+                      labelText: 'Em qual mercado?',
+                      hintText: 'Ex: Carrefour, Pão de Açúcar',
                       border: OutlineInputBorder(),
                     ),
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
                   ),
+                  const SizedBox(height: 16),
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Forma de Pagamento:'),
+                  ),
+                  DropdownButton<String>(
+                    isExpanded: true,
+                    value: paymentMethod,
+                    items: ['Cartão', 'Dinheiro', 'Pix'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => paymentMethod = val);
+                    },
+                  ),
+                  if (paymentMethod == 'Cartão') ...[
+                    const SizedBox(height: 16),
+                    if (cards.isEmpty)
+                      const Text(
+                        'Nenhum cartão cadastrado. Cadastre um na aba Finanças.',
+                        style: TextStyle(color: Colors.red, fontSize: 12),
+                      )
+                    else
+                      DropdownButtonFormField<PaymentCard>(
+                        value: selectedCard,
+                        decoration: const InputDecoration(
+                          labelText: 'Selecione o Cartão',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: cards.map((card) {
+                          return DropdownMenuItem(
+                            value: card,
+                            child: Text(card.displayName),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() => selectedCard = val);
+                        },
+                      ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (marketController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Por favor, informe o mercado')),
-                  );
-                  return;
-                }
-                Navigator.pop(context, {
-                  'market': marketController.text.trim(),
-                  'payment': paymentMethod,
-                  'digits': cardDigitsController.text.length == 4 ? cardDigitsController.text : null,
-                });
-              },
-              child: const Text('Confirmar'),
-            ),
-          ],
-        ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (marketController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Por favor, informe o mercado')),
+                    );
+                    return;
+                  }
+                  if (paymentMethod == 'Cartão' && selectedCard == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Por favor, selecione um cartão')),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, {
+                    'market': marketController.text.trim(),
+                    'payment': paymentMethod,
+                    'digits': selectedCard?.lastFourDigits,
+                    'cardInfo': selectedCard?.displayName,
+                  });
+                },
+                child: const Text('Confirmar'),
+              ),
+            ],
+          );
+        },
       ),
     );
 

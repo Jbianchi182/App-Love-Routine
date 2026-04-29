@@ -2,6 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_trip.dart';
+import 'package:love_routine_app/features/finance/presentation/providers/finance_provider.dart';
+import 'package:love_routine_app/features/finance/domain/models/finance_transaction.dart';
+import 'package:love_routine_app/features/finance/domain/enums/transaction_type.dart';
+import 'package:love_routine_app/features/finance/domain/enums/transaction_category.dart';
 
 class ShoppingNotifier extends AsyncNotifier<List<ShoppingItem>> {
   static const String boxName = 'shopping_items';
@@ -45,7 +49,11 @@ class ShoppingNotifier extends AsyncNotifier<List<ShoppingItem>> {
     state = AsyncValue.data(box.values.toList());
   }
 
-  Future<void> finalizePurchase() async {
+  Future<void> finalizePurchase({
+    required String marketName,
+    required String paymentMethod,
+    String? lastFourDigits,
+  }) async {
     final box = Hive.box<ShoppingItem>(boxName);
     final historyBox = Hive.box<ShoppingTrip>(historyBoxName);
 
@@ -78,9 +86,23 @@ class ShoppingNotifier extends AsyncNotifier<List<ShoppingItem>> {
       date: DateTime.now(),
       totalAmount: total,
       items: historyItems,
+      marketName: marketName,
+      paymentMethodId: paymentMethod,
+      lastFourDigits: lastFourDigits,
     );
 
     await historyBox.add(trip);
+
+    // Create Finance Transaction
+    final transaction = FinanceTransaction()
+      ..title = 'Compra: $marketName'
+      ..amount = total
+      ..date = DateTime.now()
+      ..type = TransactionType.expense
+      ..category = TransactionCategory.food
+      ..paymentMethodId = paymentMethod + (lastFourDigits != null ? ' (**** $lastFourDigits)' : '');
+
+    await ref.read(financeProvider.notifier).addTransaction(transaction);
 
     // Remove bought items from current list
     for (var item in boughtItems) {
@@ -96,9 +118,18 @@ final shoppingProvider =
       return ShoppingNotifier();
     });
 
-final shoppingHistoryProvider = FutureProvider<List<ShoppingTrip>>((ref) async {
+final shoppingHistoryProvider = StreamProvider<List<ShoppingTrip>>((ref) async* {
   final box = Hive.box<ShoppingTrip>(ShoppingNotifier.historyBoxName);
-  final list = box.values.toList();
-  list.sort((a, b) => b.date.compareTo(a.date));
-  return list;
+  
+  // Yield initial value
+  final initialList = box.values.toList();
+  initialList.sort((a, b) => b.date.compareTo(a.date));
+  yield initialList;
+
+  // Listen for changes
+  await for (final _ in box.watch()) {
+    final list = box.values.toList();
+    list.sort((a, b) => b.date.compareTo(a.date));
+    yield list;
+  }
 });

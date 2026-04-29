@@ -17,10 +17,18 @@ class ShoppingTrip extends HiveObject {
   @HiveField(3)
   String? paymentMethodId;
 
+  @HiveField(4)
+  String? marketName;
+
+  @HiveField(5)
+  String? lastFourDigits;
+
   ShoppingTrip({
     required this.date,
     required this.totalAmount,
     required this.items,
     this.paymentMethodId,
+    this.marketName,
+    this.lastFourDigits,
   });
 }
