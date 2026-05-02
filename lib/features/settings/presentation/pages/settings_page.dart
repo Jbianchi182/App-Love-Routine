@@ -32,27 +32,48 @@ class SettingsPage extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildSectionHeader(context, 'Personalização da Home'),
-                  _buildHomePreferences(context, ref),
-
-                  const Divider(height: 32),
-
-                  // Settings Section
-                  _buildSectionHeader(context, l10n.settingsTitle),
-                  _buildSectionHeader(context, 'Família e Residência'),
+                  // Section: Personalização da Home
                   Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.house_outlined),
-                      title: const Text('Minha Residência'),
-                      subtitle: const Text('Gerenciar membros e privacidade'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => context.go('/settings/household'),
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.dashboard_customize_outlined),
+                      title: const Text('Personalização da Home'),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: _buildHomePreferences(context, ref),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildSectionHeader(context, l10n.themeTitle),
+                  const SizedBox(height: 8),
+
+                  // Section: Família e Residência
                   Card(
-                    child: Column(
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.house_outlined),
+                      title: const Text('Família e Residência'),
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.people_outline),
+                          title: const Text('Minha Residência'),
+                          subtitle: const Text('Gerenciar membros e privacidade'),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.go('/settings/household'),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Section: Tema
+                  Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.palette_outlined),
+                      title: Text(l10n.themeTitle),
                       children: AppThemeType.values.map((type) {
                         return RadioListTile<AppThemeType>(
                           title: Text(_getThemeName(type)),
@@ -67,10 +88,14 @@ class SettingsPage extends ConsumerWidget {
                       }).toList(),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  _buildSectionHeader(context, l10n.languageTitle),
+                  const SizedBox(height: 8),
+
+                  // Section: Idioma
                   Card(
-                    child: Column(
+                    clipBehavior: Clip.antiAlias,
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.language_outlined),
+                      title: Text(l10n.languageTitle),
                       children: [
                         RadioListTile<String>(
                           title: const Text('Português'),
@@ -88,6 +113,7 @@ class SettingsPage extends ConsumerWidget {
                             if (value != null) notifier.setLocale(const Locale('en'));
                           },
                         ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),

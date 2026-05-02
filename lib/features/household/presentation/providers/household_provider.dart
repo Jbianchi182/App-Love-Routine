@@ -10,7 +10,8 @@ class HouseholdNotifier extends AsyncNotifier<Household?> {
   Future<Household?> build() async {
     final user = ref.watch(authProvider);
     if (user == null) return null;
-    return _repository.getHouseholdForUser(user.uid);
+    final list = await _repository.getHouseholdsForUser(user.uid, user.email ?? '');
+    return list.isNotEmpty ? list.first : null;
   }
 
   Future<void> createHousehold(String name) async {
@@ -20,7 +21,8 @@ class HouseholdNotifier extends AsyncNotifier<Household?> {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       await _repository.createHousehold(name, user.uid, user.email ?? '');
-      return _repository.getHouseholdForUser(user.uid);
+      final list = await _repository.getHouseholdsForUser(user.uid, user.email ?? '');
+      return list.isNotEmpty ? list.first : null;
     });
   }
 
@@ -30,8 +32,10 @@ class HouseholdNotifier extends AsyncNotifier<Household?> {
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      final user = ref.read(authProvider)!;
       await _repository.addMemberByEmail(current.id, email);
-      return _repository.getHouseholdForUser(ref.read(authProvider)!.uid);
+      final list = await _repository.getHouseholdsForUser(user.uid, user.email ?? '');
+      return list.isNotEmpty ? list.first : null;
     });
   }
 
@@ -41,8 +45,10 @@ class HouseholdNotifier extends AsyncNotifier<Household?> {
 
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
+      final user = ref.read(authProvider)!;
       await _repository.removeMember(current.id, uid, email);
-      return _repository.getHouseholdForUser(ref.read(authProvider)!.uid);
+      final list = await _repository.getHouseholdsForUser(user.uid, user.email ?? '');
+      return list.isNotEmpty ? list.first : null;
     });
   }
 
@@ -87,4 +93,10 @@ class HouseholdNotifier extends AsyncNotifier<Household?> {
 
 final householdProvider = AsyncNotifierProvider<HouseholdNotifier, Household?>(() {
   return HouseholdNotifier();
+});
+
+final userHouseholdsProvider = FutureProvider<List<Household>>((ref) async {
+  final user = ref.watch(authProvider);
+  if (user == null) return [];
+  return HouseholdRepository().getHouseholdsForUser(user.uid, user.email ?? '');
 });

@@ -75,8 +75,25 @@ class HealthView extends ConsumerWidget {
                               ListTile(
                                 leading: const Icon(Icons.local_pharmacy),
                                 title: Text(med.name),
-                                subtitle: Text(
-                                  '${med.dosage} • A cada ${med.frequencyHours}h',
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${med.dosage} • ${med.frequencyHours == 24 ? '1x ao dia' : 'A cada ${med.frequencyHours}h'}',
+                                    ),
+                                    if (med.isContinuous)
+                                      const Padding(
+                                        padding: EdgeInsets.only(top: 4.0),
+                                        child: Text(
+                                          'Uso Contínuo',
+                                          style: TextStyle(
+                                            color: Colors.teal,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,

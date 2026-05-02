@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:love_routine_app/features/shopping/domain/models/shopping_item.dart';
 import 'package:love_routine_app/features/shopping/presentation/providers/shopping_provider.dart';
+import 'package:love_routine_app/features/shopping/presentation/providers/shopping_list_provider.dart';
+import 'package:love_routine_app/features/shopping/domain/models/shopping_list_model.dart';
 import 'package:love_routine_app/features/finance/presentation/providers/card_provider.dart';
 import 'package:love_routine_app/features/finance/domain/models/payment_card.dart';
+import 'package:love_routine_app/features/household/presentation/providers/household_provider.dart';
+import 'package:love_routine_app/features/household/domain/models/household.dart';
 
 class ShoppingListPage extends ConsumerWidget {
   const ShoppingListPage({super.key});
@@ -12,55 +16,77 @@ class ShoppingListPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final itemsAsync = ref.watch(shoppingProvider);
-    final hasItems = itemsAsync.asData?.value.isNotEmpty ?? false;
+    final listsAsync = ref.watch(shoppingListProvider);
+    final selectedListId = ref.watch(selectedListIdProvider);
     final theme = Theme.of(context);
+
+    final currentList = listsAsync.value?.isNotEmpty == true
+        ? (listsAsync.value!.any((l) => l.id == selectedListId)
+            ? listsAsync.value!.firstWhere((l) => l.id == selectedListId)
+            : listsAsync.value!.first)
+        : null;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Mercado',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: Text(
+          currentList?.name ?? 'Compras',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        actions: [
+          if (currentList != null) ...[
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => _showEditListDialog(context, ref, currentList),
+              tooltip: 'Editar esta lista',
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_sweep, color: Colors.red),
+              onPressed: () => _confirmDeleteList(context, ref, currentList),
+              tooltip: 'Excluir esta lista',
+            ),
+          ],
+          TextButton.icon(
+            icon: const Icon(Icons.history, size: 20),
+            label: const Text('Histórico'),
+            onPressed: () => context.push('/shopping/history'),
+          ),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           FloatingActionButton.extended(
-            heroTag: 'history_btn',
-            onPressed: () => context.push('/shopping/history'),
-            icon: const Icon(Icons.history),
-            label: const Text('Ver Histórico', style: TextStyle(fontWeight: FontWeight.bold)),
-            backgroundColor: theme.colorScheme.primaryContainer,
-            foregroundColor: theme.colorScheme.onPrimaryContainer,
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
             heroTag: 'add_item_btn',
-            onPressed: () => _showItemDialog(context, ref, null),
+            onPressed: currentList != null 
+                ? () => ShoppingListPage.showItemDialog(context, ref, null, currentList.id)
+                : null,
             icon: const Icon(Icons.add),
-            label: const Text('Adicionar item na lista', style: TextStyle(fontWeight: FontWeight.bold)),
+            label: const Text('Adicionar item', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
-          if (hasItems) const SizedBox(height: 130), // Offset for the bottom bar
+          const SizedBox(height: 110), 
         ],
       ),
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 8),
+            _buildListSelector(context, ref),
+            const Divider(height: 1),
             Expanded(
               child: itemsAsync.when(
                 data: (items) {
-                  if (items.isEmpty) {
+                  final listItems = items.where((i) => (i.listId ?? 'default') == selectedListId).toList();
+
+                  if (listItems.isEmpty) {
                     return const Center(
                       child: Text(
-                        'Sua lista está vazia.\nAdicione itens com o botão +',
+                        'Esta lista está vazia.\nAdicione itens com o botão +',
                         textAlign: TextAlign.center,
                       ),
                     );
                   }
 
-                  final sortedItems = List<ShoppingItem>.from(items)
+                  final sortedItems = List<ShoppingItem>.from(listItems)
                     ..sort((a, b) {
                       if (a.isBought == b.isBought) return 0;
                       return a.isBought ? 1 : -1;
@@ -68,7 +94,7 @@ class ShoppingListPage extends ConsumerWidget {
 
                   double total = 0;
                   int boughtCount = 0;
-                  for (var item in items) {
+                  for (var item in listItems) {
                     if (item.isBought) {
                       boughtCount++;
                       if (item.price != null) {
@@ -108,7 +134,7 @@ class ShoppingListPage extends ConsumerWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '$boughtCount/${items.length} comprados',
+                                  '$boughtCount/${listItems.length} comprados',
                                   style: theme.textTheme.bodyMedium,
                                 ),
                                 Text(
@@ -142,6 +168,279 @@ class ShoppingListPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildListSelector(BuildContext context, WidgetRef ref) {
+    final listsAsync = ref.watch(shoppingListProvider);
+    final selectedId = ref.watch(selectedListIdProvider);
+
+    return listsAsync.when(
+      data: (lists) {
+        final personalLists = lists.where((l) => !l.isShared).toList();
+        final sharedLists = lists.where((l) => l.isShared).toList();
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              // Personal Section
+              if (personalLists.isNotEmpty) ...[
+                const Text('Minhas: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(width: 8),
+                ...personalLists.map((list) => _buildChip(context, ref, list, selectedId)),
+                const SizedBox(width: 16),
+              ],
+
+              // Shared Section
+              if (sharedLists.isNotEmpty) ...[
+                const Text('Compartilhadas: ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                const SizedBox(width: 8),
+                ...sharedLists.map((list) => _buildChip(context, ref, list, selectedId)),
+                const SizedBox(width: 8),
+              ],
+
+              // Add Button
+              IconButton(
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _showAddListDialog(context, ref),
+                color: Theme.of(context).primaryColor,
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox(height: 50),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildChip(BuildContext context, WidgetRef ref, ShoppingList list, String selectedId) {
+    final isSelected = list.id == selectedId;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(list.name),
+            if (list.isShared) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.group, size: 14),
+            ],
+          ],
+        ),
+        selected: isSelected,
+        onSelected: (val) {
+          if (val) ref.read(selectedListIdProvider.notifier).state = list.id;
+        },
+      ),
+    );
+  }
+
+  void _showEditListDialog(BuildContext context, WidgetRef ref, ShoppingList list) {
+    final controller = TextEditingController(text: list.name);
+    bool isShared = list.isShared;
+    Household? selectedHousehold;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final householdsAsync = ref.watch(userHouseholdsProvider);
+          final households = householdsAsync.asData?.value ?? [];
+
+          if (isShared && selectedHousehold == null && list.householdId != null) {
+            selectedHousehold = households.cast<Household?>().firstWhere(
+                  (h) => h?.id == list.householdId,
+                  orElse: () => null,
+                );
+          }
+
+          return AlertDialog(
+            title: const Text('Editar Lista'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Lista',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    title: const Text('Compartilhar lista'),
+                    value: isShared,
+                    onChanged: (val) => setState(() => isShared = val ?? false),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (isShared && households.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<Household>(
+                      value: selectedHousehold,
+                      decoration: const InputDecoration(
+                        labelText: 'Residência',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: households.map((h) {
+                        return DropdownMenuItem(
+                          value: h,
+                          child: Text(h.name),
+                        );
+                      }).toList(),
+                      onChanged: (val) => setState(() => selectedHousehold = val),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () {
+                  ref.read(shoppingListProvider.notifier).updateList(
+                        list.id,
+                        name: controller.text,
+                        isShared: isShared,
+                        householdId: isShared ? selectedHousehold?.id : null,
+                      );
+                  Navigator.pop(context);
+                },
+                child: const Text('Salvar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddListDialog(BuildContext context, WidgetRef ref) {
+    final controller = TextEditingController();
+    bool isShared = false;
+    Household? selectedHousehold;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final householdsAsync = ref.watch(userHouseholdsProvider);
+          final households = householdsAsync.asData?.value ?? [];
+
+          // Auto-select if only one household
+          if (households.length == 1 && selectedHousehold == null) {
+            selectedHousehold = households.first;
+          }
+
+          return AlertDialog(
+            title: const Text('Nova Lista'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Lista',
+                      hintText: 'Ex: Pet Shop, Farmácia...',
+                      border: OutlineInputBorder(),
+                    ),
+                    autofocus: true,
+                  ),
+                  const SizedBox(height: 16),
+                  CheckboxListTile(
+                    title: const Text('Compartilhar lista'),
+                    subtitle: const Text('Membros da residência poderão ver e editar'),
+                    value: isShared,
+                    onChanged: (val) => setState(() => isShared = val ?? false),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (isShared && households.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    if (households.length > 1)
+                      DropdownButtonFormField<Household>(
+                        value: selectedHousehold,
+                        decoration: const InputDecoration(
+                          labelText: 'Selecionar Residência',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: households.map((h) {
+                          return DropdownMenuItem(
+                            value: h,
+                            child: Text(h.name),
+                          );
+                        }).toList(),
+                        onChanged: (val) => setState(() => selectedHousehold = val),
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.home_outlined, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text('Compartilhando com: ${households.first.name}')),
+                          ],
+                        ),
+                      ),
+                  ] else if (isShared && households.isEmpty)
+                    const Text(
+                      'Você não possui residências cadastradas para compartilhar.',
+                      style: TextStyle(color: Colors.red, fontSize: 12),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.isNotEmpty) {
+                    ref.read(shoppingListProvider.notifier).addList(
+                      controller.text, 
+                      'shopping_basket',
+                      isShared: isShared,
+                      householdId: isShared ? selectedHousehold?.id : null,
+                    );
+                    Navigator.pop(context);
+                  }
+                },
+                child: const Text('Criar'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _confirmDeleteList(BuildContext context, WidgetRef ref, ShoppingList list) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Lista'),
+        content: Text('Tem certeza que deseja excluir a lista "${list.name}" e todos os seus itens?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(selectedListIdProvider.notifier).state = 'default';
+              ref.read(shoppingListProvider.notifier).deleteList(list.id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            child: const Text('Excluir'),
+          ),
+        ],
       ),
     );
   }
@@ -277,11 +576,28 @@ class ShoppingListPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _showItemDialog(
+  static Future<void> showItemDialog(
     BuildContext context,
     WidgetRef ref,
     ShoppingItem? item,
+    String? currentListId,
   ) async {
+    if (currentListId == null || currentListId == 'default' && (ref.read(shoppingListProvider).value?.isEmpty ?? true)) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Nenhuma lista disponível'),
+          content: const Text('Você precisa criar uma lista de compras antes de adicionar itens.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     final isEditing = item != null;
     final textController = TextEditingController(text: item?.name ?? '');
     int quantity = item?.quantity ?? 1;
@@ -348,8 +664,9 @@ class ShoppingListPage extends ConsumerWidget {
                       final newItem = ShoppingItem(
                         name: textController.text.trim(),
                         quantity: quantity,
+                        listId: currentListId,
                       );
-                      ref.read(shoppingProvider.notifier).addItem(newItem);
+                      ref.read(shoppingProvider.notifier).addItem(newItem, currentListId ?? 'default');
                     }
                     Navigator.pop(context);
                   }
@@ -431,18 +748,7 @@ class _ShoppingItemTileState extends ConsumerState<_ShoppingItemTile> {
         },
       ),
       title: InkWell(
-        onTap: () {
-          // Open edit dialog via parent widget's method approach
-          // Since we are in a sub-widget, we need to find the parent or lift the state?
-          // Simplest is to copy helper or pass callback.
-          // Re-instantiating logic here for simplicity or accessing via provider calls.
-          // Wait, _showItemDialog is private in ShoppingListPage.
-          // Let's assume user taps "Title" to edit.
-          // WE NEED TO CALL _showItemDialog.
-          // Since it's private in another class, let's just create a public static or move it.
-          // Better: just duplicate logic or make it static.
-          ShoppingListPageState.showEditDialog(context, ref, item);
-        },
+        onTap: () => ShoppingListPage.showItemDialog(context, ref, item, item.listId),
         child: Text(
           item.name,
           style: TextStyle(
@@ -509,96 +815,6 @@ class _ShoppingItemTileState extends ConsumerState<_ShoppingItemTile> {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-// Helper class to expose dialog
-class ShoppingListPageState {
-  static Future<void> showEditDialog(
-    BuildContext context,
-    WidgetRef ref,
-    ShoppingItem? item,
-  ) async {
-    // (Copy of _showItemDialog logic)
-    final isEditing = item != null;
-    final textController = TextEditingController(text: item?.name ?? '');
-    int quantity = item?.quantity ?? 1;
-
-    await showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text(isEditing ? 'Editar Item' : 'Adicionar Item'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: textController,
-                  decoration: const InputDecoration(labelText: 'Nome do Item'),
-                  textCapitalization: TextCapitalization.sentences,
-                  autofocus: !isEditing,
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: () {
-                        if (quantity > 1) {
-                          setState(() => quantity--);
-                        }
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '$quantity',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: () {
-                        setState(() => quantity++);
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  if (textController.text.trim().isNotEmpty) {
-                    if (isEditing) {
-                      item!.name = textController.text.trim();
-                      item.quantity = quantity;
-                      ref.read(shoppingProvider.notifier).updateItem(item);
-                    } else {
-                      final newItem = ShoppingItem(
-                        name: textController.text.trim(),
-                        quantity: quantity,
-                      );
-                      ref.read(shoppingProvider.notifier).addItem(newItem);
-                    }
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(isEditing ? 'Salvar' : 'Adicionar'),
-              ),
-            ],
-          );
-        },
       ),
     );
   }

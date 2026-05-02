@@ -56,17 +56,35 @@ class ShoppingHistoryView extends ConsumerWidget {
                       ),
                   ],
                 ),
-                children: trip.items.map((item) {
-                  return ListTile(
-                    title: Text(item.name),
-                    subtitle: Text(
-                      'Qtd: ${item.quantity} • R\$ ${(item.price ?? 0).toStringAsFixed(2)}',
+                children: [
+                  const Divider(),
+                  ...trip.items.map((item) {
+                    return ListTile(
+                      dense: true,
+                      title: Text(item.name),
+                      subtitle: Text(
+                        'Qtd: ${item.quantity} • R\$ ${(item.price ?? 0).toStringAsFixed(2)}',
+                      ),
+                      trailing: Text(
+                        'R\$ ${((item.price ?? 0) * item.quantity).toStringAsFixed(2)}',
+                      ),
+                    );
+                  }).toList(),
+                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => _confirmDelete(context, ref, trip),
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          label: const Text('Excluir Histórico', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
                     ),
-                    trailing: Text(
-                      'R\$ ${((item.price ?? 0) * item.quantity).toStringAsFixed(2)}',
-                    ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
             );
           },
@@ -74,6 +92,29 @@ class ShoppingHistoryView extends ConsumerWidget {
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Erro: $e')),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, WidgetRef ref, dynamic trip) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Registro?'),
+        content: const Text('Esta ação não pode ser desfeita. O registro da compra será removido do histórico.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(shoppingProvider.notifier).deleteTrip(trip);
+              Navigator.pop(context);
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
     );
   }
 }

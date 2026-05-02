@@ -19,11 +19,15 @@ class ShoppingItem extends HiveObject {
   @HiveField(4)
   double? price;
 
+  @HiveField(5)
+  String? listId;
+
   ShoppingItem({
     required this.name,
     this.quantity = 1,
     this.isBought = false,
     this.category,
     this.price,
+    this.listId,
   });
 }

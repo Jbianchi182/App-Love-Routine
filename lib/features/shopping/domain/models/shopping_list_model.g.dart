@@ -1,47 +1,47 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'shopping_item.dart';
+part of 'shopping_list_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class ShoppingItemAdapter extends TypeAdapter<ShoppingItem> {
+class ShoppingListAdapter extends TypeAdapter<ShoppingList> {
   @override
-  final int typeId = 13;
+  final int typeId = 30;
 
   @override
-  ShoppingItem read(BinaryReader reader) {
+  ShoppingList read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return ShoppingItem(
-      name: fields[0] as String,
-      quantity: fields[1] as int,
-      isBought: fields[2] as bool,
-      category: fields[3] as String?,
-      price: fields[4] as double?,
-      listId: fields[5] as String?,
+    return ShoppingList(
+      id: fields[0] as String,
+      name: fields[1] as String,
+      icon: fields[2] as String,
+      createdAt: fields[3] as DateTime,
+      isShared: fields[4] == null ? false : fields[4] as bool,
+      householdId: fields[5] as String?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, ShoppingItem obj) {
+  void write(BinaryWriter writer, ShoppingList obj) {
     writer
       ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.name)
+      ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.quantity)
+      ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.isBought)
+      ..write(obj.icon)
       ..writeByte(3)
-      ..write(obj.category)
+      ..write(obj.createdAt)
       ..writeByte(4)
-      ..write(obj.price)
+      ..write(obj.isShared)
       ..writeByte(5)
-      ..write(obj.listId);
+      ..write(obj.householdId);
   }
 
   @override
@@ -50,7 +50,7 @@ class ShoppingItemAdapter extends TypeAdapter<ShoppingItem> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ShoppingItemAdapter &&
+      other is ShoppingListAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

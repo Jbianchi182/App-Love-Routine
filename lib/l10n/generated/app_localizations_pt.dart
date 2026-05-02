@@ -48,7 +48,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get dietTitle => 'Dieta';
 
   @override
-  String get shoppingTitle => 'Mercado';
+  String get shoppingTitle => 'Compras';
 
   @override
   String get hello => 'Olá,';

@@ -32,4 +32,7 @@ class Medication extends HiveObject {
 
   @HiveField(7)
   List<DateTime> takenHistory = [];
+
+  @HiveField(9, defaultValue: false)
+  bool isContinuous = false;
 }

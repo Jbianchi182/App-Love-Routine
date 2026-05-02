@@ -45,6 +45,7 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
   }
 
   Widget _buildCreateHousehold(ThemeData theme) {
+    final currentUser = ref.watch(authProvider);
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -61,6 +62,11 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
             'Para compartilhar informações com sua família, crie um espaço compartilhado.',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Logado como: ${currentUser?.email ?? 'Sem e-mail'}',
+            style: const TextStyle(fontSize: 12, color: Colors.blueGrey),
           ),
           const SizedBox(height: 32),
           TextField(
@@ -86,6 +92,12 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
               child: const Text('Criar Agora'),
             ),
           ),
+          const SizedBox(height: 16),
+          TextButton.icon(
+            onPressed: () => ref.invalidate(householdProvider),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Já fui convidado? Clique aqui para atualizar'),
+          ),
         ],
       ),
     );
@@ -93,6 +105,7 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
 
   Widget _buildHouseholdDetails(dynamic household, ThemeData theme) {
     final currentUser = ref.read(authProvider);
+    final isOwner = household.ownerId == currentUser?.uid;
     
     return ListView(
       padding: const EdgeInsets.all(16.0),
@@ -106,21 +119,23 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
                 Expanded(
                   child: TextField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
+                    enabled: isOwner,
+                    decoration: InputDecoration(
                       labelText: 'Nome da Residência',
-                      border: InputBorder.none,
+                      border: isOwner ? const UnderlineInputBorder() : InputBorder.none,
                     ),
                     onSubmitted: (val) {
-                      ref.read(householdProvider.notifier).updateName(val);
+                      if (isOwner) ref.read(householdProvider.notifier).updateName(val);
                     },
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    ref.read(householdProvider.notifier).updateName(_nameController.text);
-                  },
-                ),
+                if (isOwner)
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      ref.read(householdProvider.notifier).updateName(_nameController.text);
+                    },
+                  ),
               ],
             ),
           ),
@@ -138,24 +153,30 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
             children: [
               ...household.memberEmails.map((email) {
                 final isMe = email == currentUser?.email;
+                // Note: We don't have UID for all emails yet, so we compare emails where possible
+                // or use ownerId if we had ownerEmail. For now, let's keep it simple.
+                final isHouseholdOwner = household.ownerId == currentUser?.uid && isMe;
+                
                 return ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.person)),
                   title: Text(email),
-                  subtitle: Text(isMe ? 'Proprietário' : 'Membro'),
-                  trailing: isMe ? null : IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                    onPressed: () {
-                      ref.read(householdProvider.notifier).removeMember('', email);
-                    },
-                  ),
+                  subtitle: Text(isMe ? 'Você' : 'Membro'),
+                  trailing: isHouseholdOwner 
+                    ? const Chip(label: Text('Dono', style: TextStyle(fontSize: 10)))
+                    : (isOwner && !isMe ? IconButton(
+                        icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                        onPressed: () => ref.read(householdProvider.notifier).removeMember('', email),
+                      ) : null),
                 );
               }),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.person_add_alt_1_outlined),
-                title: const Text('Convidar Membro'),
-                onTap: () => _showInviteDialog(context),
-              ),
+              if (isOwner) ...[
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.person_add_alt_1_outlined),
+                  title: const Text('Convidar Membro'),
+                  onTap: () => _showInviteDialog(context),
+                ),
+              ],
             ],
           ),
         ),
@@ -164,18 +185,18 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
         
         // Sharing Permissions Section
         const Text(
-          'O que compartilhar?',
+          'Módulos Compartilhados',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Card(
           child: Column(
             children: [
-              _buildSharingTile('shopping', 'Lista de Compras', Icons.shopping_cart_outlined, household),
-              _buildSharingTile('finance', 'Finanças', Icons.attach_money, household),
-              _buildSharingTile('diet', 'Dieta e Jejum', Icons.restaurant_menu, household),
-              _buildSharingTile('health', 'Saúde e Remédios', Icons.favorite_border, household),
-              _buildSharingTile('education', 'Estudos e Grade', Icons.school_outlined, household),
+              _buildSharingTile('shopping', 'Lista de Compras', Icons.shopping_cart_outlined, household, isOwner),
+              _buildSharingTile('finance', 'Finanças', Icons.attach_money, household, isOwner),
+              _buildSharingTile('diet', 'Dieta e Jejum', Icons.restaurant_menu, household, isOwner),
+              _buildSharingTile('health', 'Saúde e Remédios', Icons.favorite_border, household, isOwner),
+              _buildSharingTile('education', 'Estudos e Grade', Icons.school_outlined, household, isOwner),
             ],
           ),
         ),
@@ -183,16 +204,16 @@ class _HouseholdSettingsPageState extends ConsumerState<HouseholdSettingsPage> {
     );
   }
 
-  Widget _buildSharingTile(String slug, String title, IconData icon, dynamic household) {
+  Widget _buildSharingTile(String slug, String title, IconData icon, dynamic household, bool canEdit) {
     final isShared = household.sharedModules.contains(slug);
     return SwitchListTile(
       secondary: Icon(icon),
       title: Text(title),
-      subtitle: Text(isShared ? 'Compartilhado com a família' : 'Privado (Só eu vejo)'),
+      subtitle: Text(isShared ? 'Compartilhado com a família' : 'Privado (Só o dono vê)'),
       value: isShared,
-      onChanged: (val) {
+      onChanged: canEdit ? (val) {
         ref.read(householdProvider.notifier).toggleModule(slug);
-      },
+      } : null,
     );
   }
 

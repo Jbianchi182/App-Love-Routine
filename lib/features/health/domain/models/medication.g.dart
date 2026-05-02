@@ -25,13 +25,14 @@ class MedicationAdapter extends TypeAdapter<Medication> {
       ..endDate = fields[5] as DateTime?
       ..durationDays = fields[8] as int?
       ..nextDose = fields[6] as DateTime
-      ..takenHistory = (fields[7] as List).cast<DateTime>();
+      ..takenHistory = (fields[7] as List).cast<DateTime>()
+      ..isContinuous = fields[9] == null ? false : fields[9] as bool;
   }
 
   @override
   void write(BinaryWriter writer, Medication obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -49,7 +50,9 @@ class MedicationAdapter extends TypeAdapter<Medication> {
       ..writeByte(6)
       ..write(obj.nextDose)
       ..writeByte(7)
-      ..write(obj.takenHistory);
+      ..write(obj.takenHistory)
+      ..writeByte(9)
+      ..write(obj.isContinuous);
   }
 
   @override

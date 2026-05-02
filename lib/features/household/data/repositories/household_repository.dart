@@ -5,17 +5,44 @@ class HouseholdRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static const String collectionPath = 'households';
 
-  Future<Household?> getHouseholdForUser(String uid) async {
-    final query = await _firestore
+  Future<List<Household>> getHouseholdsForUser(String uid, String email) async {
+    final cleanEmail = email.trim().toLowerCase();
+    
+    // Search by UID
+    final uidQuery = await _firestore
         .collection(collectionPath)
         .where('members', arrayContains: uid)
-        .limit(1)
         .get();
 
-    if (query.docs.isEmpty) return null;
+    // Search by Email (for new invites)
+    final emailQuery = await _firestore
+        .collection(collectionPath)
+        .where('memberEmails', arrayContains: cleanEmail)
+        .get();
 
-    final doc = query.docs.first;
-    return Household.fromMap(doc.id, doc.data());
+    final allDocs = [...uidQuery.docs, ...emailQuery.docs];
+    final uniqueDocs = {for (var doc in allDocs) doc.id: doc};
+
+    final households = uniqueDocs.values
+        .map((doc) => Household.fromMap(doc.id, doc.data()))
+        .toList();
+
+    // Sync UID for any households found only by email
+    for (var household in households) {
+      if (!household.members.contains(uid)) {
+        try {
+          await _firestore.collection(collectionPath).doc(household.id).update({
+            'members': FieldValue.arrayUnion([uid]),
+          });
+          household.members.add(uid);
+        } catch (e) {
+          // Ignore permission errors during sync - email access is sufficient
+          print('Optional UID sync failed: $e');
+        }
+      }
+    }
+
+    return households;
   }
 
   Future<String> createHousehold(String name, String ownerId, String ownerEmail) async {
@@ -38,11 +65,9 @@ class HouseholdRepository {
   }
 
   Future<void> addMemberByEmail(String householdId, String email) async {
-    // Note: In a real app, we'd check if a user with this email exists.
-    // For now, we add the email to memberEmails. When the user logs in, 
-    // we can sync their UID if needed.
+    final cleanEmail = email.trim().toLowerCase();
     await _firestore.collection(collectionPath).doc(householdId).update({
-      'memberEmails': FieldValue.arrayUnion([email]),
+      'memberEmails': FieldValue.arrayUnion([cleanEmail]),
     });
   }
   
