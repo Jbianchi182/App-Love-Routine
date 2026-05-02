@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:love_routine_app/firebase_options.dart';
 import 'package:love_routine_app/config/routes.dart';
 import 'package:love_routine_app/config/theme.dart';
 import 'package:love_routine_app/features/settings/presentation/providers/settings_provider.dart';
@@ -31,6 +33,15 @@ import 'package:love_routine_app/features/diets/domain/models/fasting_routine.da
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+    } catch (e) {
+      debugPrint("Erro na inicialização do Firebase: $e");
+    }
     await Hive.initFlutter();
 
     // Register Adapters
@@ -117,6 +128,8 @@ class LoveRoutineApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsProvider);
 
+    final router = ref.watch(routerProvider);
+
     return MaterialApp.router(
       title: 'Love Routine',
       theme: AppTheme.getTheme(settings.themeType),
@@ -129,6 +142,7 @@ class LoveRoutineApp extends ConsumerWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

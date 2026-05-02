@@ -80,11 +80,11 @@ class MainScaffold extends ConsumerWidget {
         safePinned.add('categories'); // Fallback
     }
 
-    // Construct the 5 items: Home, Pinned 1, Pinned 2, Pinned 3, Categories
+    // Construct the 5 items: Home, Pinned 1, Pinned 2, Pinned 3, Categories (Menu)
     final List<String> navItems = ['home', ...safePinned.take(3), 'categories'];
 
     // Calculate selected index for NavigationBar
-    int selectedIndex = 4; // Default to 'Categories' (Menu)
+    int selectedIndex = 0; // Default to 'Home' (Início)
 
     final currentBranch = navigationShell.currentIndex;
 

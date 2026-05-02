@@ -9,13 +9,25 @@ class HomePreferencesNotifier extends AsyncNotifier<HomePreferences> {
   @override
   Future<HomePreferences> build() async {
     final box = Hive.box<HomePreferences>(boxName);
-    if (box.isEmpty) {
-      // Initialize defaults
-      final prefs = HomePreferences();
-      await box.put(key, prefs);
-      return prefs;
+    final prefs = box.get(key);
+    if (prefs == null) {
+      final newPrefs = HomePreferences();
+      await box.put(key, newPrefs);
+      return newPrefs;
     }
-    return box.get(key)!;
+    
+    // Ensure all default sections are present
+    final defaultSections = ['calendar', 'finance', 'upcoming'];
+    bool changed = false;
+    for (final section in defaultSections) {
+      if (!prefs.sectionOrder.contains(section)) {
+        prefs.sectionOrder.add(section);
+        changed = true;
+      }
+    }
+    if (changed) await prefs.save();
+    
+    return prefs;
   }
 
   Future<void> updateSectionOrder(List<String> order) async {

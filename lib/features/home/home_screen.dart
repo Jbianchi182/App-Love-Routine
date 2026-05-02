@@ -21,33 +21,31 @@ import 'package:love_routine_app/config/card_styles.dart';
 import 'package:love_routine_app/features/calendar/presentation/widgets/routine_dialog.dart';
 import 'package:love_routine_app/features/calendar/domain/enums/routine_status.dart';
 import 'package:love_routine_app/features/calendar/domain/models/routine.dart';
+import 'package:love_routine_app/features/auth/presentation/providers/auth_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(homeProvider); // Ensure initialization
     final prefsAsync = ref.watch(homePreferencesProvider);
-    final homeState = ref.read(homeProvider);
-    final l10n = AppLocalizations.of(context)!;
+    final homeState = ref.watch(homeProvider);
     final theme = Theme.of(context);
 
     // Date Formatting
     final locale = Localizations.localeOf(context).toString();
     final now = DateTime.now();
     final dateString = DateFormat("EEE, d 'de' MMMM", locale).format(now);
-    // Capitalize first letter
-    final formattedDate = dateString.replaceFirst(
-      dateString[0],
-      dateString[0].toUpperCase(),
-    );
+    final formattedDate = dateString.isNotEmpty 
+        ? dateString.replaceFirst(dateString[0], dateString[0].toUpperCase())
+        : "";
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Header
+            // Header - Always show this
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -57,10 +55,8 @@ class HomeScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Olá,', // TODO: Add User Name if available
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: theme.colorScheme.onBackground,
-                        ),
+                        'Olá, ${ref.watch(authProvider)?.displayName?.split(' ').first ?? 'Usuário'}',
+                        style: theme.textTheme.headlineSmall,
                       ),
                       Text(
                         formattedDate,
@@ -71,23 +67,57 @@ class HomeScreen extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Icon(Icons.person, color: theme.colorScheme.primary),
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'logout') {
+                        await ref.read(authProvider.notifier).signOut();
+                      } else if (value == 'settings') {
+                        context.go('/settings');
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'settings',
+                        child: Row(
+                          children: [
+                            Icon(Icons.settings, color: Colors.blue),
+                            SizedBox(width: 8),
+                            Text('Configurações'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'logout',
+                        child: Row(
+                          children: [
+                            Icon(Icons.logout, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Sair'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      backgroundImage: ref.watch(authProvider)?.photoURL != null
+                          ? NetworkImage(ref.watch(authProvider)!.photoURL!)
+                          : null,
+                      child: ref.watch(authProvider)?.photoURL == null
+                          ? Icon(Icons.person, color: theme.colorScheme.primary)
+                          : null,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            // Body Content (Responsive)
+            // Body Content
             Expanded(
               child: prefsAsync.when(
-                data: (prefs) {
-                  return _buildResponsiveBody(context, ref, homeState, prefs);
-                },
+                data: (prefs) => _buildResponsiveBody(context, ref, homeState, prefs),
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => const Center(child: Text('Erro ao carregar')),
+                error: (e, _) => Center(child: Text('Erro: $e')),
               ),
             ),
           ],
@@ -123,46 +153,38 @@ class HomeScreen extends ConsumerWidget {
     HomeState homeState,
     HomePreferences prefs,
   ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: prefs.sectionOrder.map((section) {
-            if (section == 'upcoming') {
-              return _buildUpcomingSection(context, ref);
-            }
-            if (section == 'finance') {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: GestureDetector(
-                  onTap: () => context.go('/category/finance'),
-                  child: FinancialSummaryWidget(
-                    income: homeState.income,
-                    expense: homeState.expense,
-                  ),
-                ),
-              );
-            }
-            if (section == 'calendar') {
-              return Column(
-                children: [
-                  HomeCalendarWidget(
-                    onDaySelected: (day) {
-                      // Always show dialog to add routine when day is selected/tapped
-                      // Or maybe only if tapped again? 
-                      // User wants to be able to create more than one. 
-                      // Let's make it so if they tap the day, it opens the dialog.
-                      _showRoutineDialog(context, ref, routine: null);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
-              );
-            }
-            return Container();
-          }).toList(),
-        );
-      },
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: prefs.sectionOrder.map((section) {
+        if (section == 'upcoming') {
+          return _buildUpcomingSection(context, ref);
+        }
+        if (section == 'finance') {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: GestureDetector(
+              onTap: () => context.go('/category/finance'),
+              child: FinancialSummaryWidget(
+                income: homeState.income,
+                expense: homeState.expense,
+              ),
+            ),
+          );
+        }
+        if (section == 'calendar') {
+          return Column(
+            children: [
+              HomeCalendarWidget(
+                onDaySelected: (day) {
+                  _showRoutineDialog(context, ref, routine: null);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        }
+        return const SizedBox.shrink();
+      }).toList(),
     );
   }
 

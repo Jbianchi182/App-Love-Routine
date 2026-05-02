@@ -41,6 +41,7 @@ class HomeCalendarWidget extends ConsumerWidget {
           focusedDay: homeState.focusedDate,
           selectedDayPredicate: (day) => isSameDay(homeState.selectedDate, day),
           calendarFormat: CalendarFormat.month,
+          availableGestures: AvailableGestures.horizontalSwipe,
           locale: Localizations.localeOf(context).toString(),
           availableCalendarFormats: const {CalendarFormat.month: 'Month'},
           headerStyle: HeaderStyle(

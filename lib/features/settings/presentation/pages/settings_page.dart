@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:love_routine_app/config/theme.dart';
 import 'package:love_routine_app/features/settings/presentation/providers/settings_provider.dart';
@@ -38,6 +39,17 @@ class SettingsPage extends ConsumerWidget {
 
                   // Settings Section
                   _buildSectionHeader(context, l10n.settingsTitle),
+                  _buildSectionHeader(context, 'Família e Residência'),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.house_outlined),
+                      title: const Text('Minha Residência'),
+                      subtitle: const Text('Gerenciar membros e privacidade'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.go('/settings/household'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   _buildSectionHeader(context, l10n.themeTitle),
                   Card(
                     child: Column(
@@ -307,6 +319,8 @@ class SettingsPage extends ConsumerWidget {
     switch (section) {
       case 'finance':
         return 'Resumo Financeiro';
+      case 'calendar':
+        return 'Calendário';
       case 'upcoming':
         return 'Próximos Eventos';
       default:
